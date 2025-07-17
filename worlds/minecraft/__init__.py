@@ -40,7 +40,7 @@ class MinecraftSettings(settings.Group):
 
 class MinecraftWebWorld(WebWorld):
     theme = "jungle"
-    bug_report_page = "https://github.com/KonoTyran/Minecraft_AP_Randomizer/issues/new?assignees=&labels=bug&template=bug_report.yaml&title=%5BBug%5D%3A+Brief+Description+of+bug+here"
+    bug_report_page = "https://github.com/qixils/NeoForgeAP/issues/new?assignees=&labels=bug&template=bug_report.yaml&title=%5BBug%5D%3A+Brief+Description+of+bug+here"
 
     setup = Tutorial(
         "Multiworld Setup Guide",
@@ -49,7 +49,7 @@ class MinecraftWebWorld(WebWorld):
         "English",
         "minecraft_en.md",
         "minecraft/en",
-        ["Kono Tyran"]
+        ["qixils"]
     )
 
     setup_es = Tutorial(

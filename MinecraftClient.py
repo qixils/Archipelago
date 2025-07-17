@@ -227,7 +227,7 @@ def run_forge_server(forge_dir: str, java_version: str, heap_arg: str) -> Popen:
 
 
 def get_minecraft_versions(version, release_channel="release"):
-    version_file_endpoint = "https://raw.githubusercontent.com/KonoTyran/Minecraft_AP_Randomizer/master/versions/minecraft_versions.json"
+    version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/main/versions/minecraft_versions.json"
     resp = requests.get(version_file_endpoint)
     local = False
     if resp.status_code == 200:  # OK
