@@ -7,6 +7,7 @@ Currently, the following games are supported:
 
 * The Legend of Zelda: A Link to the Past
 * Factorio
+* Minecraft
 * Subnautica
 * Risk of Rain 2
 * The Legend of Zelda: Ocarina of Time
