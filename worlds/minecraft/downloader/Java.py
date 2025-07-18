@@ -1,4 +1,5 @@
-from .Utilities import download_file, jre_paths, ua_header, write_eula
+from . import StepsStep, SyncStep
+from .Utilities import DownloadStep, FetchStep, download_file, jre_paths, ua_header, write_eula
 from Utils import is_windows, is_linux
 import os
 import requests
@@ -44,6 +45,72 @@ class Asset(TypedDict):
     release_name: str
     vendor: str
     version: Version
+
+class DownloadJava(StepsStep):
+    def __init__(self, to: str, version: int):
+        self.to = to
+        self.version = version
+        self.outpath = os.path.join(self.to, "java", jre_paths[self.version])
+        self.zip_path = os.path.join(self.outpath, "jre.zip")
+        self.name = f"Downloading Java {version}..."
+
+        super().__init__(
+            SyncStep(self._get_api_url),
+            FetchStep(),
+            SyncStep(self._process_assets),
+            DownloadStep(filepath=self.zip_path),
+            SyncStep(self._process_extract),
+        )
+    
+    def _get_api_url(self) -> str:
+        print(f"Fetching Java {self.version} versions")
+
+        system = "windows" if is_windows else "linux" if is_linux else None
+        if not system:
+            raise Exception("Unsupported operating system for Java download")
+        
+        arch = "aarch64" if platform.machine() in ["aarch64", "arm64"] else "x64"
+
+        return f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?architecture={arch}&image_type=jre&os={system}&vendor=eclipse"
+    
+    def _process_assets(self, assets: list[Asset]) -> str | None:
+        data: Asset = assets[0]
+
+        os.makedirs(self.outpath, exist_ok=True)
+        release_path = os.path.join(self.outpath, "release")
+        semver = None
+
+        if os.path.exists(release_path):
+            with open(release_path, 'r') as file:
+                info = file.read()
+                semver = info.split('SEMANTIC_VERSION="')[1].split('"')[0]
+
+        if data["version"]["semver"] == semver:
+            print("Already up-to-date, skipping download")
+            return
+
+        print(f"Downloading Java {data['version']['semver']}")
+        return data["binary"]["package"]["link"]
+    
+    def _process_extract(self, req):
+        if req is False:
+            # download is skipped
+            return
+
+        print(f"Extracting Java {self.version}")
+        with zipfile.ZipFile(self.zip_path, 'r') as zip_ref:
+            subfolder = zip_ref.namelist()[0]
+            for entry in zip_ref.infolist()[1:-1]:
+                if entry.is_dir():
+                    continue
+                relative = entry.filename[len(subfolder):]
+                filepath = os.path.join(self.outpath, *relative.split("/"))
+                dirpath = os.path.dirname(filepath)
+                os.makedirs(dirpath, exist_ok=True)
+                with open(filepath, 'wb') as file:
+                    file.write(zip_ref.read(entry.filename))
+
+        os.remove(self.zip_path)
 
 def download_jre(to: str, version: int) -> str:
     print(f"Fetching Java {version} versions")
