@@ -18,7 +18,6 @@ from queue import Queue
 from typing import List, Optional
 from urllib.parse import urlparse
 
-import certifi
 from kivy import Config
 from kivy.core.window import Window
 from kivy.core.image import Image as CoreImage
@@ -44,6 +43,10 @@ from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.widget import MDWidget
 
 import Utils
+from worlds.minecraft.downloader import ServerInstallData, StepsStep, SyncStep
+from worlds.minecraft.downloader.Java import DownloadJava
+from worlds.minecraft.downloader.NeoForge import DownloadNeoForge
+from worlds.minecraft.downloader.Utilities import DownloadStep, FetchStep
 
 version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/main/versions/minecraft_versions.json"
 
@@ -113,101 +116,6 @@ def get_recent_items() -> List:
     return saves
 
 
-# TODO: Implement usage of MDLinearProgressIndicator for loading bars. Most of the logic can stay the same,
-#  but figure out how exactly to put the progress bar into the popup. If I understand Kivy/MD correctly.
-class Downloader:
-    def __init__(self, url, folder, download_popup, on_success=None, on_error=None,
-                 on_finish=None, file_name=None, extract=False):
-        self.url = url
-        self.folder = folder
-        self.on_success = on_success
-        self.on_error = on_error
-        self.download_popup = download_popup
-        self.file_name = file_name
-        self.on_finish = on_finish
-        self.extract = extract
-        self._download()
-
-    def _download(self):
-        UrlRequest(self.url,
-                   on_progress=self._download_progress,
-                   on_finish=self._download_finish,
-                   on_success=self._download_success,
-                   on_error=self._download_error,
-                   on_redirect=self._download_redirect,
-                   chunk_size=1024000,
-                   ca_file=certifi.where())
-
-    def _download_progress(self, request, current_size, total_size):
-        if total_size > 0:
-            self.download_popup.progress_text = (f"Downloading..."
-                                                 f" {format_bytes(current_size)} / {format_bytes(total_size)}")
-            self.download_popup.value = current_size / total_size * 100
-        else:
-            self.download_popup.progress_text = f"Downloading... {format_bytes(current_size)}"
-            self.download_popup.value = 100
-
-    def _download_redirect(self, request: UrlRequestUrllib, result: str):
-        old_url = urlparse(request.url)
-        loc = request.resp_headers['Location']
-        if loc.startswith("/"):
-            url = f"{old_url.scheme}://{old_url.netloc}{loc}"
-        else:
-            url = loc
-        self.url = url
-        self._download()
-
-    def _download_error(self, request, error):
-        self.on_error(error)
-
-    def _download_success(self, request: UrlRequestUrllib, result):
-        os.makedirs(self.folder, exist_ok=True)
-        headers = request.resp_headers
-        file_name = os.path.basename(request.url)
-        if 'Content-Disposition' in headers and not self.file_name:
-            file_name = headers.get('Content-Disposition').split("filename=")[1].strip('"')
-        if self.file_name:
-            file_name = self.file_name
-        else:
-            self.file_name = file_name
-
-        file = os.path.join(self.folder, file_name)
-        try:
-            with open(file, 'wb') as f:
-                f.write(result)
-        except Exception as e:
-            self.on_error(e)
-            return
-
-        if self.extract:
-            self._extract()
-            return
-        self.download_popup.dismiss()
-        self.on_success()
-
-    def _download_finish(self, request: UrlRequestUrllib):
-        if not self.extract:
-            pass
-            self.on_finish()
-
-    def _extract(self):
-        logger.info(f"extracting file")
-        self.download_popup.progress_text = "Extracting..."
-        self.download_popup.value = 0
-
-        def extract():
-            archive = os.path.join(self.folder, self.file_name)
-            logger.info(f"extracting {archive}")
-            shutil.unpack_archive(archive, self.folder)
-            logger.info(f"extraction complete")
-            os.remove(archive)
-            self.download_popup.dismiss()
-            # self.on_finish()
-            self.on_success()
-
-            threading.Thread(target=extract).start()
-
-
 class MinecraftClient(MDApp):
     stop = threading.Event()
 
@@ -222,21 +130,40 @@ class MinecraftClient(MDApp):
         self.version = {}
         self.server = None
         self.java_url = None
-        self.download: Optional[Downloader] = None
         self.status: ServerStatus = ServerStatus.STOPPED
         self.apmc_path = None
         self.mod_info = {}
         self.release_chanel = None
         logger.info(f"Client Initialized")
+        self._init_mod_info()
+
+    # Handles (re)loading mod info, whether from a successful HTTP request or not
+    def _handle_mod_info(self, resp):
+        if resp:
+            self.mod_info = resp
+            os.makedirs(options.server_directory, exist_ok=True)
+            with open(fp, 'w') as f:
+                self.mod_info = json.dump(resp, f)
+            return
+
+        fp = os.path.join(options.server_directory, 'ap-version.json')
+        if not os.path.exists(fp):
+            return
+
         try:
-            logger.info(
-                f"attempting to load versions file from {os.path.join(options.server_directory, 'ap-version.json')}")
-            with open(os.path.join(options.server_directory, "ap-version.json"), "r") as f:
+            with open(fp, 'r') as f:
                 self.mod_info = json.load(f)
-        except Exception:
-            logger.error(
-                f"unable to load versions file from {os.path.join(options.server_directory, 'ap-version.json')}")
-            pass
+        except Exception as e:
+            logger.error("Failed to parse ap-version JSON", e)
+
+    # Handles initializing the mod info fetching process
+    def _init_mod_info(self):
+        StepsStep(
+            SyncStep(self._handle_mod_info), # Load the cached JSON file
+            FetchStep(url=version_file_endpoint), # Download the latest version
+            SyncStep(self._handle_mod_info), # Save the latest version (if available)
+            # TODO: self.auto_start_server() ?
+        ).run(error_ok=True)
 
     def build(self):
         logger.info(f"building client")
@@ -250,28 +177,14 @@ class MinecraftClient(MDApp):
         logger.info(f"client built")
 
         # send our request out to fetch the versions file
-        logger.info(f"fetching versions file from {version_file_endpoint}")
-        UrlRequest(version_file_endpoint,
-                   on_success=self.process_versions,
-                   on_failure=self.process_local_versions,
-                   on_error=self.process_local_versions,
-                   on_cancel=self.process_local_versions,
-                   on_redirect=self.versions_redirect,
-                   on_finish=self.versions_finish,
-                   ca_file=certifi.where())
+        logger.info(f"fetching versions file")
+        self._init_mod_info()
 
         logger.info(f"binding on close request")
         Window.bind(on_request_close=self.on_request_close)
 
         logger.info(f"returning window manager")
         return self.window_manager
-
-    def versions_redirect(self, request: UrlRequestUrllib, result):
-        logger.warning(f"redirected to {result}")
-        self.log_warn(f"redirected to {result}")
-
-    def versions_finish(self, request: UrlRequestUrllib):
-        logger.info(f"versions file download finished")
 
     def on_request_close(self, *arg):
         if self.status == ServerStatus.RUNNING:
@@ -303,92 +216,6 @@ class MinecraftClient(MDApp):
         ids.min_memory.value = options.min_heap_size
         ids.release_option.value = options.release_channel
         ids.release_option.options = self.minecraft_versions.keys()
-    
-    def load_minecraft_versions(version: Optional[int], release_channel: Optional[str]) -> ModVersion:
-        resp = requests.get(version_file_endpoint)
-        local = False
-        if resp.status_code == 200:  # OK
-            try:
-                data: list[ModVersion] = resp.json()
-            except requests.exceptions.JSONDecodeError:
-                logging.warning(f"Unable to fetch version update file, using local version. (status code {resp.status_code}).")
-                local = True
-        else:
-            logging.warning(f"Unable to fetch version update file, using local version. (status code {resp.status_code}).")
-            local = True
-
-        if local:
-            with open(Utils.user_path("minecraft_versions.json"), 'r') as f:
-                data = json.load(f)
-        else:
-            with open(Utils.user_path("minecraft_versions.json"), 'w') as f:
-                json.dump(data, f)
-
-        try:
-            # Filter to compatible versions and release channels
-            # If no release channel is specified we sort for the stable-est release channel available
-            items = sorted(
-                (item for item in data if (item["version"] == version or version is None) and
-                (item["channel"] == release_channel or release_channel is None)),
-                key=lambda x: (x["channel"] != "release", x["version"]),
-                reverse=True
-            )
-            return next(items)
-        except (StopIteration, KeyError):
-            logging.error(f"No compatible mod version found for client version {version} on \"{release_channel}\" channel.")
-            if release_channel != "release":
-                logging.error("Consider switching \"release_channel\" to \"release\" in your Host.yaml file")
-            else:
-                logging.error("No suitable mod found on the \"release\" channel. Please Contact us on discord to report this error.")
-            sys.exit(0)
-
-    def process_versions(self, response: UrlRequestUrllib, result):
-        try:
-            logger.info(f"versions file download successful, parsing versions file")
-            self.minecraft_versions: dict[str, dict] = json.loads(result)
-            logger.info(f"making server directory {options.server_directory}")
-            os.makedirs(options.server_directory, exist_ok=True)
-            logger.info(
-                f"attempting to write versions file to {os.path.join(options.server_directory,
-                                                                     'minecraft_versions.json')}")
-            with open(os.path.join(options.server_directory, "minecraft_versions.json"), 'w') as file:
-                json.dump(self.minecraft_versions, file)
-                logger.info(f"versions file written")
-
-            logger.info(
-                f"checking if versions file exists at {os.path.join(options.server_directory,
-                                                                    'minecraft_versions.json')}")
-            if os.path.isfile(os.path.join(options.server_directory, "minecraft_versions.json")):
-                logger.info(f"it was")
-
-            else:
-                logger.error(
-                    f"Failed to write versions file to {os.path.join(options.server_directory,
-                                                                     'minecraft_versions.json')}")
-            self.auto_start_server()
-        except Exception as e:
-            logger.error(f"{os.path.join(options.server_directory, 'minecraft_versions.json')}")
-            logger.error(f"unable to parse versions file: {e}")
-            self.log_error(f"unable to parse versions file: {e}")
-
-    def process_local_versions(self, response: UrlRequestUrllib, result: str):
-        logger.warning(f"unable to fetch remote versions due to {result}. falling back to local cache.")
-        if os.path.isfile(os.path.join(options.server_directory, "minecraft_versions.json")):
-            with open(os.path.join(options.server_directory, "minecraft_versions.json"), 'r') as f:
-                self.minecraft_versions = json.load(f)
-            self.auto_start_server()
-        else:
-            self.apmc_path = None
-            logger.error(
-                f"No local versions file found, and an error occurred while attempting to download a new one."
-                f" \n Reason: {result}")
-            info_dialog(title="Error",
-                        content=f"No local versions file found, and an error occurred"
-                                f" while attempting to download a new one."
-                                f" \n Reason: {result}")
-            self.log_error(
-                "No versions file found."
-                " Must be connected to the internet on initial startup to fetch version and mod info.")
 
     def auto_start_server(self):
         Clock.schedule_once(self.init, 1)
@@ -453,139 +280,34 @@ class MinecraftClient(MDApp):
                                    folder=folder,
                                    download_popup=self.server_window.progress_popup,
                                    on_success=on_success, on_error=on_error,
-                                   on_finish=self.download_finished,
+                                   on_finish=lambda: self.server_window.close_progress_bar_dialog(),
                                    file_name=file_name,
                                    extract=extract)
 
-    def download_finished(self):
-        self.server_window.close_progress_bar_dialog()
-
     @mainthread
     def start_server(self) -> None:
-        if not self.check_mods():
-            mods = self.version["mods"]
-            self.index = 0
+        # TODO: define better insight/typing into what self.version is
+        StepsStep(
+            DownloadJava(options.server_directory, 21),
+            DownloadNeoForge(options.server_directory, self.version["minecraft"]), # TODO: is there a standalone JAR like fabric now? check history
+            SyncStep(lambda data: (None, os.path.join(data.mods_dir, "Archipelago.jar"))),
+            DownloadStep(self.version["url"])
+        )
 
-            def dont_update():
-                self.index = 0
-                self.version.update(self.mod_info)
-                self.start_server()
+        # TODO: migrate into above (for check_eula, integrate it as a KivyMD-based prompt into the EULA writer in NeoForge.py)
+        # if self.apmc.get("description") is None:
+        #     edit_prompt(title="Set Description", content="Set a description for this world", default="",
+        #                 confirm=lambda text: self.set_description(text))
+        #     return
 
-            def finish_mod_download():
-                with open(os.path.join(options.server_directory, "ap-version.json"), "w") as f:
-                    self.mod_info = self.version
-                    json.dump(self.mod_info, f)
+        # if not self.check_eula():
+        #     confirm_prompt(title="EULA Agreement",
+        #                    content="By running this server you agree to the Minecraft EULA"
+        #                            "\nhttps://aka.ms/MinecraftEULA\nDo you agree to the Minecraft Eula?",
+        #                    confirm=lambda _: self.eula_yes(), cancel=lambda _: self.eula_no())
+        #     return
 
-                self.start_server()
-
-            def next_mod():
-                self.download = None
-                if self.index >= len(mods):
-                    finish_mod_download()
-                    return
-                self.download_file(url=mods[self.index],
-                                   folder=os.path.join(options.server_directory, "mods"),
-                                   on_success=next_mod,
-                                   on_error=self.mod_error,
-                                   message=f"Downloading Mod {self.index + 1}/{len(mods)}"
-                                   )
-                self.index += 1
-
-            def update_mod_list():
-                shutil.rmtree(os.path.join(options.server_directory, "mods"), ignore_errors=True)
-                os.makedirs(os.path.join(options.server_directory, "mods"), exist_ok=True)
-                next_mod()
-
-            confirm_prompt(title="Mod List Update",
-                           content="The mod list has changed.\n"
-                                   "Do you want to update the mod list?\n"
-                                   "WARNING: This will wipe the mods directory.",
-                           confirm=lambda _: update_mod_list(),
-                           cancel=lambda _: dont_update())
-            return
-
-        if self.get_jdk() is None:
-            self.remove_old_jdk()
-            java = self.get_java_url()
-            logger.info(f"downloading java from {java}")
-            self.download_file(java,
-                               folder=options.server_directory,
-                               on_success=self.start_server,
-                               on_error=self.jdk_error,
-                               extract=True,
-                               message="Downloading Java"
-                               )
-            return
-
-        # TODO: Replace with NeoForge Installer (Lexi)
-        if self.get_server_jar() is None:
-            self.download_file(
-                url=neoforge_server_url.replace("[minecraft]",
-                                                self.version["minecraft"]).replace("[neoforge]",
-                                                                                   self.version[
-                                                                                       "neoforge"]).replace(
-                    "[installer]", self.version["neoforge_installer"]),
-                folder=options.server_directory,
-                file_name=self.get_server_jar_name(),
-                on_success=self.start_server,
-                on_error=self.server_jar_error,
-                message="Downloading NeoForged"
-            )
-            return
-
-        if not self.check_mods():
-            mods = self.version["mods"]
-            self.index = 0
-
-            return
-
-        if self.apmc.get("description") is None:
-            edit_prompt(title="Set Description", content="Set a description for this world", default="",
-                        confirm=lambda text: self.set_description(text))
-            return
-
-        if not self.check_eula():
-            confirm_prompt(title="EULA Agreement",
-                           content="By running this server you agree to the Minecraft EULA"
-                                   "\nhttps://aka.ms/MinecraftEULA\nDo you agree to the Minecraft Eula?",
-                           confirm=lambda _: self.eula_yes(), cancel=lambda _: self.eula_no())
-            return
-
-        threading.Thread(target=self.server_thread).start()
-
-    def check_mods(self) -> bool:
-        return self.mod_info.get("mod_list_version") == self.version["mod_list_version"]
-
-    def mod_error(self, error):
-        info_dialog(title="Error", content=f"There was an error downloading Mod \n {error}")
-        self.window_manager.current = "Welcome"
-
-    def server_jar_error(self, error):
-        info_dialog(title="Error", content=f"There was an error downloading Server Jar \n {error}")
-        self.window_manager.current = "Welcome"
-
-    def jdk_error(self, error):
-        info_dialog(title="Error", content=f"There was an error downloading Java \n {error}")
-        self.window_manager.current = "Welcome"
-
-    @mainthread
-    def finish_jdk_extract(self):
-        self.log_info(f"jdk extracted to {options.server_directory}")
-        self.server_window.close_progress_bar_dialog()
-        self.start_server()
-
-    @mainthread
-    def open_progress_bar_dialog(self, title, content, max):
-        self.server_window.show_progress_bar_dialog(title, content, max)
-
-    @mainthread
-    def set_progress(self, value):
-        if self.server_window.progress_popup is not None:
-            self.server_window.progress_popup.progress = value
-
-    def jdk_finished(self, request: UrlRequestUrllib):
-        self.server_window.close_progress_bar_dialog()
-        self.download = None
+        # threading.Thread(target=self.server_thread).start()
 
     def server_thread(self):
 
@@ -784,6 +506,7 @@ class ProgressBarDialog(Popup):
         self.max = max
 
 
+# TODO: migrate to Steps
 def confirm_prompt(confirm=None, title="Prompt", content="Are you sure?", cancel=None, confirm_text="Yes",
                    cancel_text="No"):
     popup = ConfirmDialog(title=title, text=content, confirm_text=confirm_text, cancel_text=cancel_text)

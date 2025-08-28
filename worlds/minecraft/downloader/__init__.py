@@ -18,10 +18,10 @@ class StepsStep(Step):
         super().__init__()
         self.steps = steps
     
-    def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
-        self.run_index(0, previous=previous, on_success=on_success, on_failure=on_failure, on_progress=on_progress)
+    def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None, error_ok: bool = False):
+        self.run_index(0, previous=previous, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
     
-    def _run_index(self, index: int, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
+    def _run_index(self, index: int, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None, error_ok: bool = False):
         if len(self.steps) <= index:
             if on_progress is not None:
                 on_progress(1.0)     
@@ -32,15 +32,20 @@ class StepsStep(Step):
         if on_progress is not None:
             on_progress(index / len(self.steps))
 
-        try: 
+        success_lambda = lambda *result: self._run_index(index + 1, *result, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
+
+        try:
             self.steps[index].run(
                 previous=previous,
-                on_success=lambda *result: self._run_index(index + 1, *result, on_success=on_success, on_failure=on_failure, on_progress=on_progress),
-                on_failure=on_failure,
+                on_success=success_lambda,
+                on_failure=on_failure if not error_ok else (lambda err: success_lambda()),
                 on_progress=lambda value: self._emit_on_progress(index=index, extra=value, on_progress=on_progress),
+                error_ok=error_ok,
             )
         except Exception as e:
-            if on_failure is not None:
+            if error_ok:
+                success_lambda()
+            elif on_failure is not None:
                 on_failure(e)
     
     def _emit_on_progress(self, index: int, name: str, extra: float = 0, on_progress: Callable | None = None):

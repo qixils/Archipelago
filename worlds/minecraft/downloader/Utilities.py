@@ -17,6 +17,7 @@ jre_paths: dict[int, str] = {
 }
 
 # TODO: headers
+# TODO: redirects
 
 class DownloadStep(Step):
     def __init__(self, url: str | None = None, filepath: str | None = None):
@@ -25,9 +26,16 @@ class DownloadStep(Step):
         self.url = url
     
     def run(self, res_url: Any, res_filepath: Any, res_ver: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
-        url = res_url if res_url is not None and type(res_url) is str else self.url
-        filepath = res_filepath if res_filepath is not None and type(res_filepath) is str else self.filepath
-        version = res_ver if res_ver is not None and type(res_ver) is str else None
+        url = res_url or self.url
+        filepath = res_filepath or self.filepath
+        version = res_ver
+
+        if type(url) is function:
+            url = url()
+        if type(filepath) is function:
+            filepath = filepath()
+        if type(version) is function:
+            version = version()
 
         # If we were passed a blank URL then we assume this skip should be skipped for already being downloaded
         if not url or not filepath:
