@@ -167,8 +167,8 @@ class MinecraftClient(MDApp):
 
     def build(self):
         logger.info(f"building client")
-        # TODO: Rewrite MinecraftClient.kv to work with KivyMD. Look under the data file.
-        Builder.load_string(load_text("data", "MinecraftClient.kv"))
+        # TODO: Rewrite minecraft.kv to work with KivyMD. Look under the data file.
+        Builder.load_string(load_text("layouts", "minecraft.kv"))
         self.window_manager = WindowManager(transition=NoTransition())
         self.welcome_window = WelcomeWindow(self)
         self.server_window = ServerWindow(self)
