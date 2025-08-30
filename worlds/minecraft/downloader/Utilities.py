@@ -1,7 +1,9 @@
+import logging
 import os
 import subprocess
 import sys
 import threading
+
 import certifi
 import requests
 from typing import Any, Callable, Optional
@@ -25,16 +27,19 @@ class DownloadStep(Step):
         self.filepath = filepath
         self.url = url
     
-    def run(self, res_url: Any, res_filepath: Any, res_ver: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
+    def run(self, res_url: Any, res_filepath: Any, res_ver: Any,*, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
         url = res_url or self.url
         filepath = res_filepath or self.filepath
         version = res_ver
 
-        if type(url) is function:
+        # if type(url) is function:
+        if callable(url):
             url = url()
-        if type(filepath) is function:
+        # if type(filepath) is function:
+        if callable(filepath):
             filepath = filepath()
-        if type(version) is function:
+        # if type(version) is function:
+        if callable(version):
             version = version()
 
         # If we were passed a blank URL then we assume this skip should be skipped for already being downloaded
@@ -70,12 +75,22 @@ class FetchStep(Step):
     def __init__(self, url: str | None = None):
         super().__init__()
         self.url = url
-    
-    def run(self, previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
+        self.logger = logging.getLogger("MinecraftStepsStep")
+
+    # def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
+    def run(self, *previous: Any,
+            on_success: Callable | None = None,
+            on_failure: Callable | None = None,
+            on_progress: Callable[[float], None] | None = None,
+            error_ok: bool = False):
         url = previous if previous is not None and type(previous) is str else self.url
-        UrlRequest(url,
-                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, f"Loading data..."),
-                   on_success=on_success,
+        self.logger.info(f"Requesting to url: {url}")
+        # url = *previous
+        payload_lambda = lambda req, resp: on_success(resp)
+        request = UrlRequest(url,
+                   # on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, f"Loading data..."),
+                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size),
+                   on_success=payload_lambda,
                    on_error=on_failure,
                    ca_file=certifi.where())
 

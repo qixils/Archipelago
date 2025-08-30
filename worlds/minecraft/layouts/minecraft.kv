@@ -230,6 +230,7 @@
             on_text_validate: root.send_command(self.text)
 
 <WelcomeWindow>:
+    id: 'welcome'
     name: "Welcome"
     padding: 10, 5, 10, 10
     TabbedPanel:
@@ -291,7 +292,6 @@
                 FolderOption:
                     id: path
                     label: "Server Path"
-                    value: "default"
                     button_label: "Open Folder"
                     Button:
                         size_hint: None, 1
@@ -302,15 +302,12 @@
                 TextOption:
                     id: max_memory
                     label: "Max Memory"
-                    value: ""
 
                 TextOption:
                     id: min_memory
                     label: "Min Memory"
-                    value: ""
 
                 DropdownOption:
                     id: release_option
-                    value: ""
-                    options: []
+                    options: ['release', 'beta']
                     label: "Release Channel"

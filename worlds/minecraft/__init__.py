@@ -37,8 +37,19 @@ class MinecraftSettings(settings.Group):
         Path to Java executable. If not set, will attempt to fall back to Java system installation.
         """
 
+    class ServerDirectory(settings.OptionalUserFolderPath):
+        """
+        Path to local directory to install Java, Neo Forge, etc.
+        """
+        @classmethod
+        def validate(cls, path: str):
+            if os.path.exists(path) and not os.path.isdir(path):
+                raise ValueError(f"'{path}' must be a folder")
+
+    server_directory: ServerDirectory = ServerDirectory("Minecraft AP Server Directory")
     forge_directory: ForgeDirectory = ForgeDirectory("Minecraft NeoForge server")
     max_heap_size: str = "2G"
+    min_heap_size: str = "1G"
     release_channel: ReleaseChannel = ReleaseChannel("release")
     java: JavaExecutable = JavaExecutable("")
 
