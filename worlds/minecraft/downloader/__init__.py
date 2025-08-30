@@ -19,9 +19,9 @@ class StepsStep(Step):
         self.steps = steps
     
     def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None, error_ok: bool = False):
-        self.run_index(0, previous=previous, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
+        self._run_index(0, previous=previous, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
     
-    def _run_index(self, index: int, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None, error_ok: bool = False):
+    def _run_index(self, index: int, previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None, error_ok: bool = False):
         if len(self.steps) <= index:
             if on_progress is not None:
                 on_progress(1.0)     
@@ -32,7 +32,7 @@ class StepsStep(Step):
         if on_progress is not None:
             on_progress(index / len(self.steps))
 
-        success_lambda = lambda *result: self._run_index(index + 1, *result, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
+        success_lambda = lambda result: self._run_index(index + 1, result, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
 
         try:
             self.steps[index].run(
@@ -44,7 +44,7 @@ class StepsStep(Step):
             )
         except Exception as e:
             if error_ok:
-                success_lambda()
+                success_lambda(previous)
             elif on_failure is not None:
                 on_failure(e)
     

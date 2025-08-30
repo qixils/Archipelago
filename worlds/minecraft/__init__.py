@@ -9,6 +9,7 @@ from BaseClasses import Region, Entrance, Item, Tutorial, ItemClassification, Lo
 from worlds.AutoWorld import World, WebWorld
 
 from . import Constants
+from .MinecraftClient import add_to_launcher_components
 from .Options import MinecraftOptions
 from .Structures import shuffle_structures
 from .ItemPool import build_item_pool, get_junk_item_names
@@ -17,7 +18,9 @@ from ..LauncherComponents import icon_paths
 
 client_version = 9
 
-icon_paths['mcicon'] = "ap:minecraft/assets/mcicon.png"
+icon_paths['mcicon'] = f"ap:{__name__}/assets/mcicon.png"
+
+add_to_launcher_components()
 
 class MinecraftSettings(settings.Group):
     class ForgeDirectory(settings.OptionalUserFolderPath):

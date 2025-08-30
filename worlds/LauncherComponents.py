@@ -59,7 +59,7 @@ class Component:
 
     def __init__(self, display_name: str, script_name: Optional[str] = None, frozen_name: Optional[str] = None,
                  cli: bool = False, icon: str = 'icon', component_type: Optional[Type] = None,
-                 func: Optional[Callable] = NOne, file_identifier: Optional[Callable[[str], bool]] = None,
+                 func: Optional[Callable] = None, file_identifier: Optional[Callable[[str], bool]] = None,
                  game_name: Optional[str] = None, supports_uri: Optional[bool] = False, description: str = "") -> None:
         self.display_name = display_name
         self.description = description

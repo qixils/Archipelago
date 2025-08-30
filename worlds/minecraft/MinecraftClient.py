@@ -11,13 +11,23 @@ import subprocess
 import sys
 import threading
 import time
+from argparse import Namespace
+
+if __name__ == '__main__':
+    # makes this module runnable from its world folder.
+    sys.path.remove(os.path.dirname(__file__))
+    new_home = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+    os.chdir(new_home)
+    sys.path.append(new_home)
 
 from enum import Enum
 from math import floor, log
 from queue import Queue
-from typing import List, Optional
+from tkinter import filedialog
+from typing import List, Optional, TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
+import kvui
 from kivy import Config
 from kivy.core.window import Window
 from kivy.core.image import Image as CoreImage
@@ -42,7 +52,8 @@ from kivymd.uix.screen import MDScreen
 from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.widget import MDWidget
 
-import Utils
+
+from logging import Logger
 from worlds.minecraft.downloader import ServerInstallData, StepsStep, SyncStep
 from worlds.minecraft.downloader.Java import DownloadJava
 from worlds.minecraft.downloader.NeoForge import DownloadNeoForge
@@ -50,33 +61,29 @@ from worlds.minecraft.downloader.Utilities import DownloadStep, FetchStep
 
 version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/main/versions/minecraft_versions.json"
 
+if TYPE_CHECKING:
+    import Utils
+
 # TODO: Import/fix options.py and/or whatever is being generated in host.yaml
-options = Utils.get_settings()["minecraft_options"]
+options: Any = None
+utils: Optional['Utils'] = None
+logger: Optional[Logger] = None
+args: Namespace
 
-os.environ["KIVY_NO_CONSOLELOG"] = "1"
-os.environ["KIVY_NO_FILELOG"] = "1"
-os.environ["KIVY_NO_ARGS"] = "1"
-os.environ["KIVY_LOG_ENABLE"] = "0"
-
-Config.set("input", "mouse", "mouse,disable_multitouch")
-Config.set("kivy", "exit_on_escape", "0")
-Config.set("graphics", "multisamples", "0")
-
-parser = argparse.ArgumentParser()
-parser.add_argument("apmc_file", default=None, nargs='?', help="Path to an Archipelago Minecraft data file (.apmc)")
-
-args, rest = parser.parse_known_args()
-
-Utils.init_logging('MinecraftClient')
-logger = logging.getLogger("MinecraftClient")
 
 
 def load_text(*path: str):
-    return pkgutil.get_data(__name__, "/".join(path)).decode()
+    if __name__ == '__main__':
+        return pkgutil.get_data('worlds.minecraft', "/".join(path)).decode()
+    else:
+        return pkgutil.get_data(__name__, "/".join(path)).decode()
 
 
 def load_image(*path: str):
-    data = io.BytesIO(pkgutil.get_data(__name__, "/".join(path)))
+    if __name__ == '__main__':
+        data = io.BytesIO(pkgutil.get_data('worlds.minecraft', "/".join(path)))
+    else:
+        data = io.BytesIO(pkgutil.get_data(__name__, "/".join(path)))
     texture = CoreImage(data, ext="png")
     return texture
 
@@ -142,8 +149,9 @@ class MinecraftClient(MDApp):
         if resp:
             self.mod_info = resp
             os.makedirs(options.server_directory, exist_ok=True)
-            with open(fp, 'w') as f:
-                self.mod_info = json.dump(resp, f)
+            # TODO: Cang
+            # with open(fp, 'w') as f:
+            #     self.mod_info = json.dump(resp, f)
             return
 
         fp = os.path.join(options.server_directory, 'ap-version.json')
@@ -171,9 +179,11 @@ class MinecraftClient(MDApp):
         Builder.load_string(load_text("layouts", "minecraft.kv"))
         self.window_manager = WindowManager(transition=NoTransition())
         self.welcome_window = WelcomeWindow(self)
-        self.server_window = ServerWindow(self)
+        # TODO: Cang
+        # self.server_window = ServerWindow(self)
         self.window_manager.add_widget(self.welcome_window)
-        self.window_manager.add_widget(self.server_window)
+        # TODO: Cang
+        # self.window_manager.add_widget(self.server_window)
         logger.info(f"client built")
 
         # send our request out to fetch the versions file
@@ -191,7 +201,8 @@ class MinecraftClient(MDApp):
             self.send_command("stop")
             Clock.schedule_interval(self.close, 1 / 60)
             return True
-        sys.exit()
+        # sys.exit()
+
 
     def close(self, dt):
         if self.stop.is_set():
@@ -624,12 +635,51 @@ class WelcomeWindow(MDScreen):
         options.max_heap_size = self.ids.max_memory.value
         options.min_heap_size = self.ids.min_memory.value
         options.release_channel = self.ids.release_option.value
-        Utils.get_settings().save()
+        utils.get_settings().save()
         self.client.init()
 
+def add_to_launcher_components():
+    from worlds.LauncherComponents import Component, components, Type
+    components.append(Component("Minecraft Client",
+                                icon="mcicon",
+                                func=launch_subprocess,
+                                component_type=Type.CLIENT,
+                                ))
 
-def launch():
+def launch_subprocess(*args):
+    from worlds.LauncherComponents import launch
+    launch(mc_launch, "Minecraft Client", args)
+
+def mc_launch(*arguments):
+    print("top of launch")
+    import Utils
+    global utils
+    utils = Utils
+    utils.init_logging('MinecraftClient')
+    global logger
+    logger = logging.getLogger("MinecraftClient")
+    logger.setLevel('DEBUG')
+    global options
+    options = utils.get_settings()["minecraft_options"]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("apmc_file", default=None, nargs='?', help="Path to an Archipelago Minecraft data file (.apmc)")
+    global args
+    args = parser.parse_args(arguments)
+    # os.environ["KIVY_NO_CONSOLELOG"] = "1"
+    # os.environ["KIVY_NO_FILELOG"] = "1"
+    # os.environ["KIVY_NO_ARGS"] = "1"
+    # os.environ["KIVY_LOG_ENABLE"] = "0"
+
+    # os.environ["KIVY_NO_CONSOLELOG"] = "1"
+    # os.environ["KIVY_NO_FILELOG"] = "1"
+    # os.environ["KIVY_NO_ARGS"] = "1"
+    # os.environ["KIVY_LOG_ENABLE"] = "1"
+    #
+    # Config.set("input", "mouse", "mouse,disable_multitouch")
+    # Config.set("kivy", "exit_on_escape", "0")
+    # Config.set("graphics", "multisamples", "0")
+    # print("hello")
     MinecraftClient().run()
 
-
-MinecraftClient().run()
+if __name__ == "__main__":
+    mc_launch(sys.argv)
