@@ -1,3 +1,5 @@
+import logging
+
 from . import StepsStep, SyncStep
 from .Utilities import DownloadStep, FetchStep, download_file, jre_paths, ua_header, write_eula
 from Utils import is_windows, is_linux
@@ -52,18 +54,18 @@ class DownloadJava(StepsStep):
         self.version = version
         self.outpath = os.path.join(self.to, "java", jre_paths[self.version])
         self.zip_path = os.path.join(self.outpath, "jre.zip")
-        self.name = f"Downloading Java {version}..."
-
+        self.logger = logging.getLogger("MinecraftClient")
         super().__init__(
+            f"Downloading Java {version}...",
             SyncStep(self._get_api_url),
             FetchStep(),
             SyncStep(self._process_assets),
             DownloadStep(filepath=self.zip_path),
             SyncStep(self._process_extract),
         )
-    
+
     def _get_api_url(self) -> str:
-        print(f"Fetching Java {self.version} versions")
+        self.logger.info(f"Fetching Java {self.version} versions")
 
         system = "windows" if is_windows else "linux" if is_linux else None
         if not system:
@@ -73,7 +75,7 @@ class DownloadJava(StepsStep):
 
         return f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?architecture={arch}&image_type=jre&os={system}&vendor=eclipse"
     
-    def _process_assets(self, assets: list[Asset]) -> str | None:
+    def _process_assets(self, assets: list[Asset]) -> tuple:
         data: Asset = assets[0]
 
         os.makedirs(self.outpath, exist_ok=True)
@@ -84,23 +86,23 @@ class DownloadJava(StepsStep):
             with open(release_path, 'r') as file:
                 info = file.read()
                 semver = info.split('SEMANTIC_VERSION="')[1].split('"')[0]
-
+        self.logger.info(f"Received semver: {data['version']['semver']} local ver: {semver}")
         if data["version"]["semver"] == semver:
-            print("Already up-to-date, skipping download")
-            return
+            self.logger.info("Already up-to-date, skipping download")
+            return False
 
-        print(f"Downloading Java {data['version']['semver']}")
-        return data["binary"]["package"]["link"]
+        self.logger.info(f"Downloading Java {data['version']['semver']}")
+        return data["binary"]["package"]["link"], None, data['version']['semver']
     
-    def _process_extract(self, req):
-        if req is False:
+    def _process_extract(self, res):
+        if not res:
             # download is skipped
             return
 
-        print(f"Extracting Java {self.version}")
+        self.logger.info(f"Extracting Java {self.version}")
         with zipfile.ZipFile(self.zip_path, 'r') as zip_ref:
             subfolder = zip_ref.namelist()[0]
-            for entry in zip_ref.infolist()[1:-1]:
+            for entry in zip_ref.infolist()[1:]:
                 if entry.is_dir():
                     continue
                 relative = entry.filename[len(subfolder):]

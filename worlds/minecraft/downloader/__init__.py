@@ -21,11 +21,10 @@ class Step(ABC):
 
 class StepsStep(Step):
     def __init__(self, name: str, *steps: Step):
-        import Utils
         super().__init__()
         self.steps = steps
         # Utils.init_logging("Minecraft")
-        self.logger = logging.Logger("MinecraftStepsStep",level="DEBUG")
+        self.logger = logging.Logger("MinecraftClient",level="DEBUG")
         self.name = name
         # self.logger.setLevel('DEBUG')
 
@@ -80,8 +79,10 @@ class StepsStep(Step):
             extra = 0
         else:
             extra = max(0.0, min(1.0, extra))
-        
-        on_progress((index / len(self.steps)) + (extra / len(self.steps)), name or self.steps[index].name or self.name)
+
+        # TODO(cang): figure out name thingy
+        # on_progress((index / len(self.steps)) + (extra / len(self.steps)), name or self.steps[index].name or self.name)
+        on_progress((index / len(self.steps)) + (extra / len(self.steps)))
 
 
 
@@ -90,14 +91,17 @@ class SyncStep(Step):
     def __init__(self, fn: Callable):
         super().__init__()
         self.fn = fn
-        self.logger = logging.Logger("MinecraftStepsStep",level="DEBUG")
+        self.logger = logging.Logger("MinecraftClient",level="DEBUG")
 
     def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None, error_ok: bool = False):
         try:
             res = self.fn(*previous if type(previous) is tuple else previous)
-            self.logger.error(f"Got result {res}")
+            self.logger.info(f"Got result {res}")
             if on_success is not None:
-                on_success(res)
+                if res is None or type(res) is not tuple:
+                    on_success(res)
+                else:
+                    on_success(*res)
         except Exception as e:
             self.logger.error("Step failed", exc_info=True)
             if on_failure is not None:

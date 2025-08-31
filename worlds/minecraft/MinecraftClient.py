@@ -12,7 +12,8 @@ import sys
 import threading
 import time
 from argparse import Namespace
-import kvui
+from collections import defaultdict
+
 
 
 if __name__ == '__main__':
@@ -26,9 +27,10 @@ from enum import Enum
 from math import floor, log
 from queue import Queue
 from tkinter import filedialog
-from typing import List, Optional, TYPE_CHECKING, Any
+from typing import List, Optional, TYPE_CHECKING, Any, TypedDict
 from urllib.parse import urlparse
 
+import kvui
 from kivy import Config
 from kivy.core.window import Window
 from kivy.core.image import Image as CoreImage
@@ -74,7 +76,13 @@ logger.setLevel('DEBUG')
 # options: Optional['MinecraftSettings'] = None
 args: Namespace
 
-
+class VersionsJson(TypedDict):
+    version: str
+    channel: str
+    data: int
+    java: int
+    minecraft: str
+    url: str
 
 def load_text(*path: str):
     if __name__ == '__main__':
@@ -154,17 +162,18 @@ class MinecraftClient(MDApp):
         self.welcome_window: Optional[WelcomeWindow] = None
         self.window_manager: Optional[WindowManager] = None
         self.server_window: Optional[ServerWindow] = None
-        self.minecraft_versions: dict[str, list] = {}
+        self.minecraft_versions: defaultdict[str, List[VersionsJson]] = defaultdict(lambda: list())
+        # release channel to list of versions, I guess
         self.apmc = None
-        self.version = {}
+        self.version: VersionsJson = dict()
         self.server = None
         self.java_url = None
         self.status: ServerStatus = ServerStatus.STOPPED
         self.apmc_path = None
-        self.mod_info = {}
+        self.mod_info: List[VersionsJson] = list()
         self.release_chanel = None
         logger.info(f"Client Initialized")
-        self._init_mod_info()
+        # self._init_mod_info()
 
     # Handles (re)loading mod info, whether from a successful HTTP request or not
     def _handle_mod_info(self, resp: Optional[Any] = None) -> None:
@@ -172,10 +181,11 @@ class MinecraftClient(MDApp):
         fp = os.path.join(options.server_directory, 'ap-version.json')
         logger.info(f"Got response: {resp}")
         if resp:
-            self.mod_info = json.loads(resp)
+            self.mod_info: List[VersionsJson] = json.loads(resp)
             os.makedirs(options.server_directory, exist_ok=True)
             with open(fp, 'w') as f:
                 json.dump(self.mod_info, f)
+            self._init_mc_versions()
             return
 
         if not os.path.exists(fp):
@@ -183,9 +193,16 @@ class MinecraftClient(MDApp):
 
         try:
             with open(fp, 'r') as f:
-                self.mod_info = json.load(f)
+                self.mod_info: List[VersionsJson] = json.load(f)
+            self._init_mc_versions()
         except:
             logger.error("Failed to parse ap-version JSON", exc_info=True)
+
+
+    def _init_mc_versions(self):
+        self.minecraft_versions.clear()
+        for data in self.mod_info:
+            self.minecraft_versions[data['channel']].append(data)
 
     # Handles initializing the mod info fetching process
     def _init_mod_info(self):
@@ -280,11 +297,13 @@ class MinecraftClient(MDApp):
         if apmc is not None:
             try:
                 self.apmc = apmc
-                self.version = next(filter(lambda entry: entry['version'] == self.apmc["client_version"],
+                # TODO(cang) This seems brittle, as it looks like there can be multiple valid mc versions
+                self.version = next(filter(lambda entry: entry['data'] == self.apmc["client_version"],
                                            self.minecraft_versions[options.release_channel]))
                 self.server_window.status.text = f"Initializing {self.version['minecraft']}"
 
-                self.window_manager.current = "Server"
+                # TODO:(cang) restore
+                # self.window_manager.current = "Server"
                 self.start_server()
             except KeyError:
                 logger.error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
@@ -323,15 +342,17 @@ class MinecraftClient(MDApp):
 
     @mainthread
     def start_server(self) -> None:
+        Utils.init_logging("MinecraftClient", "DEBUG")
+        logger = logging.getLogger("MinecraftClient")
         options = get_options()
         # TODO: define better insight/typing into what self.version is
         StepsStep(
-            "Download dependencies",
-            DownloadJava(options.server_directory, 21),
-            DownloadNeoForge(options.server_directory, self.version["minecraft"]), # TODO: is there a standalone JAR like fabric now? check history
-            SyncStep(lambda data: (None, os.path.join(data.mods_dir, "Archipelago.jar"))),
+            "Download Dependencies",
+            DownloadJava(options.server_directory, self.version['java']),
+            DownloadNeoForge(options.server_directory, confirm_prompt, self.version["minecraft"]), # TODO: is there a standalone JAR like fabric now? check history
+            SyncStep(lambda data: (None, os.path.join(data.mods_dir, "Archipelago.jar"), self.version['version'])),
             DownloadStep(self.version["url"])
-        )
+        ).run(on_failure=lambda *args: logger.error(f"Dependency Downloads failed {args}", exc_info=True))
 
         # TODO: migrate into above (for check_eula, integrate it as a KivyMD-based prompt into the EULA writer in NeoForge.py)
         # if self.apmc.get("description") is None:
@@ -717,6 +738,7 @@ def mc_launch(*arguments):
     # Config.set("kivy", "exit_on_escape", "0")
     # Config.set("graphics", "multisamples", "0")
     # print("hello")
+    Config.set("network", "implementation", "requests")
     MinecraftClient().run()
 
 if __name__ == "__main__":

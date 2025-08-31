@@ -8,7 +8,7 @@ import certifi
 import requests
 from typing import Any, Callable, Optional
 from . import Step
-from kivy.network.urlrequest import UrlRequest, UrlRequestUrllib
+from kivy.network.urlrequest import UrlRequest, UrlRequestUrllib, UrlRequestRequests
 
 ua = "qixils/minecraft-crowdcontrol/1.0.0"
 ua_header = {"User-Agent": ua}
@@ -26,11 +26,28 @@ class DownloadStep(Step):
         super().__init__()
         self.filepath = filepath
         self.url = url
+        self.logger = logging.getLogger("MinecraftClient")
     
-    def run(self, res_url: Any, res_filepath: Any, res_ver: Any,*, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
-        url = res_url or self.url
-        filepath = res_filepath or self.filepath
-        version = res_ver
+    def run(self,
+            *args,
+            # res_url: Any,
+            # res_filepath: Any,
+            # res_ver: Any,
+            # *,
+            on_success: Callable | None = None,
+            on_failure: Callable | None = None,
+            on_progress: Callable[[float], None] | None = None,
+            error_ok: bool = False):
+        url = self.url
+        filepath = self.filepath
+        version = None
+        self.logger.info(f"Got arguments {args}")
+        if len(args) > 0:
+            url = args[0] or url
+        if len(args) > 1:
+            filepath = args[1] or filepath
+        if len(args) > 2:
+            version = args[2] or version
 
         # if type(url) is function:
         if callable(url):
@@ -42,6 +59,7 @@ class DownloadStep(Step):
         if callable(version):
             version = version()
 
+        self.filepath = filepath
         # If we were passed a blank URL then we assume this skip should be skipped for already being downloaded
         if not url or not filepath:
             if on_success is not None:
@@ -49,33 +67,38 @@ class DownloadStep(Step):
             return
 
         # Optionally check if a file with a matching version is already downloaded
-        version_path = self.filepath + ".version"
+        version_path = filepath + ".version"
         if version is not None:
             if os.path.exists(version_path):
                 with open(version_path, 'r') as f:
                     if f.read().strip() == version:
-                        on_success()
+                        on_success(False)
                         return
-
-        UrlRequest(url,
-                   file_path=self.filepath,
-                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, f"Downloading {os.path.basename(filepath)}..."),
-                   on_success=lambda *res: self._on_success(*res, version=version, on_success=on_success),
+        self.logger.info(f"Sending request to {url}; downloading to {filepath}")
+        UrlRequestRequests(url,
+                   file_path=filepath,
+                   # TODO(cang): figure out progress name
+                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size if total_size > 0 else 0),#, f"Downloading {os.path.basename(filepath)}..."),
+                   # on_progress=lambda req, current_size, total_size: self.logger.info(f"{req.resp_status}"),
+                   on_success=lambda req, res: self._on_success(res, version=version, on_success=on_success),
                    on_error=on_failure,
+                   on_redirect= lambda req, res: self.logger.info(f"{req}, {res}, {req.resp_status} {req.resp_headers}"),
+                   # on_error=lambda req, e : self.
                    chunk_size=1024000,
-                   ca_file=certifi.where())
-    
-    def _on_success(self, *res, version: str | None = None, on_success: Callable | None = None):
-        with open(self.filepath, 'w') as f:
+                   # ca_file=certifi.where()
+                   )
+
+    def _on_success(self, res, version: str | None = None, on_success: Callable | None = None):
+        with open(self.filepath + ".version", 'w') as f:
             f.write(version)
         if on_success is not None:
-            on_success(*res)
+            on_success(res or True)
 
 class FetchStep(Step):
     def __init__(self, url: str | None = None):
         super().__init__()
         self.url = url
-        self.logger = logging.getLogger("MinecraftStepsStep")
+        self.logger = logging.getLogger("MinecraftClient")
 
     # def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
     def run(self, *previous: Any,
@@ -83,11 +106,11 @@ class FetchStep(Step):
             on_failure: Callable | None = None,
             on_progress: Callable[[float], None] | None = None,
             error_ok: bool = False):
-        url = previous if previous is not None and type(previous) is str else self.url
+        if previous:
+            url = previous[0] if previous[0] is not None and type(previous[0]) is str else self.url
         self.logger.info(f"Requesting to url: {url}")
-        # url = *previous
         payload_lambda = lambda req, resp: on_success(resp)
-        request = UrlRequest(url,
+        UrlRequest(url,
                    # on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, f"Loading data..."),
                    on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size),
                    on_success=payload_lambda,
@@ -98,26 +121,34 @@ class SubprocessStep(Step):
     def __init__(self, *args):
         super().__init__()
         self.args = args
+        self.logger = logging.getLogger("MinecraftClient")
     
-    def run(self, *previous, on_success: Callable | None = None, on_failure: Callable | None = None):
+    def run(self, *previous,
+            on_success: Callable | None = None,
+            on_failure: Callable | None = None,
+            on_progress: Callable | None = None,
+            error_ok: bool = False):
         args = previous if len(previous) > 0 else self.args
 
-        if args is None or len(args) == 0:
+        if args is None or len(args) == 0 or not args[0]:
             on_success(False)
             return
-        
+        self.logger.info(f"Arguments: {args}")
         thread = threading.Thread(target=self._run_in_thread, args=(on_success, args))
         thread.start()
     
     @staticmethod
     def _run_in_thread(on_exit: Callable, popen_args: tuple):
+        logger = logging.getLogger("MinecraftClient")
         kwargs = dict()
+        logger.info(f"Arguments: {popen_args}")
         if type(popen_args[-1]) is dict:
             kwargs = popen_args[-1]
             popen_args = popen_args[:-1]
+        logger.info(f"Arguments: {popen_args} {kwargs}")
         proc = subprocess.Popen(*popen_args, **kwargs)
         proc.wait()
-        on_exit()
+        on_exit(True)
         
 
 def mkdir(dir: str, empty: bool = False) -> str:
@@ -205,3 +236,4 @@ def write_run(jar: str, java: int) -> None:
     with open(bat_file, 'w') as f:
         f.write(f"@echo off\n"
                 f"start ..\\java\\{jre}\\bin\\java.exe -Xmx2048M -Xms2048M -jar {jar_name} nogui > log.txt 2> errorlog.txt")
+
