@@ -9,6 +9,7 @@ from BaseClasses import Region, Entrance, Item, Tutorial, ItemClassification, Lo
 from worlds.AutoWorld import World, WebWorld
 
 from . import Constants
+from .Container import MinecraftContainer
 from .MinecraftClient import add_to_launcher_components
 from .Options import MinecraftOptions
 from .Structures import shuffle_structures
@@ -195,8 +196,16 @@ class MinecraftWorld(World):
     def generate_output(self, output_directory: str) -> None:
         data = self._get_mc_data()
         filename = f"{self.multiworld.get_out_file_name_base(self.player)}.apmc"
-        with open(os.path.join(output_directory, filename), 'wb') as f:
-            f.write(b64encode(bytes(json.dumps(data), 'utf-8')))
+        # with open(os.path.join(output_directory, filename), 'wb') as f:
+        #     f.write(b64encode(bytes(json.dumps(data), 'utf-8')))
+
+        container = MinecraftContainer(data,
+                                       filename,
+                                       os.path.join(output_directory, filename),
+                                       self.player,
+                                       self.multiworld.get_file_safe_player_name(self.player),
+                                       )
+        container.write()
 
     def fill_slot_data(self) -> dict:
         return self._get_mc_data()

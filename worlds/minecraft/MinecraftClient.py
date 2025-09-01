@@ -10,8 +10,12 @@ import subprocess
 import sys
 import threading
 import time
+import zipfile
 from argparse import Namespace
+from base64 import b64encode
 from collections import defaultdict
+
+from worlds.LauncherComponents import SuffixIdentifier
 
 if __name__ == '__main__':
     # makes this module runnable from its world folder.
@@ -62,8 +66,6 @@ if TYPE_CHECKING:
 import Utils
 Utils.init_logging('MinecraftClient')
 logger = logging.getLogger("MinecraftClient")
-logger.setLevel('DEBUG')
-args: Namespace
 
 class VersionsJson(TypedDict):
     version: str
@@ -122,7 +124,8 @@ def get_recent_items(options: 'MinecraftSettings') -> List:
             description = "None"
             with open(save, "r") as jsonfile:
                 save = json.load(jsonfile)
-                description = save["description"]
+                if 'description' in  save:
+                    description = save["description"]
             saves.append((description, directory))
     return saves
 
@@ -130,7 +133,7 @@ def get_recent_items(options: 'MinecraftSettings') -> List:
 class MinecraftClient(MDApp):
     stop = threading.Event()
 
-    def __init__(self, **kwargs):
+    def __init__(self, args, **kwargs):
         super().__init__(**kwargs)
         self.index = 0
         self.welcome_window: Optional[WelcomeWindow] = None
@@ -146,14 +149,14 @@ class MinecraftClient(MDApp):
         self.apmc_path = None
         self.mod_info: List[VersionsJson] = list()
         self.release_chanel = None
+        self.args = args
         logger.info(f"Client Initialized")
-        # self._init_mod_info()
 
     # Handles (re)loading mod info, whether from a successful HTTP request or not
     def _handle_mod_info(self, context: dict[str, Any], resp: Optional[Any] = None) -> None:
         options = get_options()
         fp = os.path.join(options.server_directory, 'ap-version.json')
-        logger.info(f"Got response: {resp}")
+        logger.debug(f"Got response: {resp}")
         if resp:
             self.mod_info: List[VersionsJson] = json.loads(resp)
             os.makedirs(options.server_directory, exist_ok=True)
@@ -186,6 +189,7 @@ class MinecraftClient(MDApp):
             FetchStep(url=version_file_endpoint), # Download the latest version
             BytesToStringStep(),
             SyncStep(self._handle_mod_info), # Save the latest version (if available)
+            SyncStep(self.auto_start_server),
             # TODO: self.auto_start_server() ?
         ).run(dict(), error_ok=True)
 
@@ -200,15 +204,17 @@ class MinecraftClient(MDApp):
         self.window_manager.add_widget(self.server_window)
         logger.info(f"client built")
 
-        # send our request out to fetch the versions file
-        logger.info(f"fetching versions file")
-        self._init_mod_info()
 
         logger.info(f"binding on close request")
         Window.bind(on_request_close=self.on_request_close)
 
         logger.info(f"returning window manager")
         return self.window_manager
+
+    def on_start(self):
+        # send our request out to fetch the versions file
+        logger.info(f"fetching versions file")
+        self._init_mod_info()
 
     def on_request_close(self, *arg):
         if self.status == ServerStatus.RUNNING:
@@ -243,9 +249,9 @@ class MinecraftClient(MDApp):
         ids.release_option.value = options.release_channel
         ids.release_option.mc_options = self.minecraft_versions.keys()
 
-    def auto_start_server(self):
+    def auto_start_server(self, context: dict[str, Any], *ignore):
         Clock.schedule_once(self.init, 1)
-        self.apmc_path = os.path.abspath(args.apmc_file) if args.apmc_file else None
+        self.apmc_path = os.path.abspath(self.args.apmc_file) if self.args.apmc_file else None
         if self.apmc_path:
             self.open_apmc(path=self.apmc_path)
 
@@ -259,14 +265,29 @@ class MinecraftClient(MDApp):
                                                         filetypes=(("Archipelago Minecraft", "*.apmc"),))
         if self.apmc_path is None or self.apmc_path == "" or os.path.isfile(self.apmc_path) is False:
             return
-        with open(self.apmc_path, "r") as f:
-            data = f.read()
 
-            if data.startswith("e"):
-                from base64 import b64decode
-                apmc = json.loads(b64decode(data))
-            elif data.startswith("{"):
-                apmc = json.loads(data)
+        if zipfile.is_zipfile(self.apmc_path):
+            with zipfile.ZipFile(self.apmc_path, 'r') as zf:
+                for entry in zf.infolist():
+                    if entry.filename.endswith(".apmc"):
+                        embedded_apmc = entry.filename
+                        break
+                with zf.open(embedded_apmc, 'r' ) as f:
+                    data = f.read()
+                    data = data.decode('utf-8')
+                    if data.startswith("e"):
+                        from base64 import b64decode
+                        apmc = json.loads(b64decode(data))
+                    elif data.startswith("{"):
+                        apmc = json.loads(data)
+        else:
+            with open(self.apmc_path, 'r') as f:
+                data = f.read()
+                if data.startswith("e"):
+                    from base64 import b64decode
+                    apmc = json.loads(b64decode(data))
+                elif data.startswith("{"):
+                    apmc = json.loads(data)
 
         if apmc is not None:
             try:
@@ -292,7 +313,7 @@ class MinecraftClient(MDApp):
 
     @mainthread
     def start_server(self) -> None:
-        Utils.init_logging("MinecraftClient", "DEBUG")
+        Utils.init_logging("MinecraftClient" )
         logger = logging.getLogger("MinecraftClient")
         options = get_options()
         # TODO: define better insight/typing into what self.version is
@@ -324,7 +345,8 @@ class MinecraftClient(MDApp):
         # TODO: does this need to be empty??
         neo_apmc = os.path.join(apdata_dir, apmc_name)
         if not os.path.exists(neo_apmc):
-            shutil.copy(self.apmc_path, neo_apmc)
+            with open(neo_apmc, 'wb') as f:
+                f.write(b64encode(bytes(json.dumps(self.apmc), 'utf-8')))
 
     def server_thread(self, context: dict[str, Any]):
         options = get_options()
@@ -686,6 +708,7 @@ def add_to_launcher_components():
                                 icon="mcicon",
                                 func=launch_subprocess,
                                 component_type=Type.CLIENT,
+                                file_identifier=SuffixIdentifier('.apmc'),
                                 ))
 
 def launch_subprocess(*args):
@@ -695,7 +718,6 @@ def launch_subprocess(*args):
 def mc_launch(*arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument("apmc_file", default=None, nargs='?', help="Path to an Archipelago Minecraft data file (.apmc)")
-    global args
     args = parser.parse_args(arguments)
     # os.environ["KIVY_NO_CONSOLELOG"] = "1"
     # os.environ["KIVY_NO_FILELOG"] = "1"
@@ -712,7 +734,7 @@ def mc_launch(*arguments):
     # Config.set("graphics", "multisamples", "0")
     # print("hello")
     Config.set("network", "implementation", "requests")
-    MinecraftClient().run()
+    MinecraftClient(args).run()
 
 if __name__ == "__main__":
     mc_launch(sys.argv)
