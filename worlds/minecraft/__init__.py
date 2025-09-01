@@ -196,8 +196,6 @@ class MinecraftWorld(World):
     def generate_output(self, output_directory: str) -> None:
         data = self._get_mc_data()
         filename = f"{self.multiworld.get_out_file_name_base(self.player)}.apmc"
-        # with open(os.path.join(output_directory, filename), 'wb') as f:
-        #     f.write(b64encode(bytes(json.dumps(data), 'utf-8')))
 
         container = MinecraftContainer(data,
                                        filename,

@@ -46,13 +46,10 @@ class DownloadStep(Step):
         if len(args) > 2:
             version = args[2] or version
 
-        # if type(url) is function:
         if callable(url):
             url = url()
-        # if type(filepath) is function:
         if callable(filepath):
             filepath = filepath()
-        # if type(version) is function:
         if callable(version):
             version = version()
 
@@ -76,11 +73,9 @@ class DownloadStep(Step):
         UrlRequestRequests(url,
                    file_path=filepath,
                    on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size if total_size > 0 else 0, f"Downloading {os.path.basename(filepath)}..."),
-                   # on_progress=lambda req, current_size, total_size: self.logger.info(f"{req.resp_status}"),
                    on_success=lambda req, res: self._on_success(res, version=version, on_success=on_success),
                    on_error=on_failure,
                    on_redirect= lambda req, res: self.logger.info(f"{req}, {res}, {req.resp_status} {req.resp_headers}"),
-                   # on_error=lambda req, e : self.
                    chunk_size=1024000,
                    # ca_file=certifi.where()
                    )
