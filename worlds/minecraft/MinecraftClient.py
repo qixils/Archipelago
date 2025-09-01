@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import pkgutil
-import platform
 import re
 import shutil
 import subprocess
@@ -28,16 +27,14 @@ from math import floor, log
 from queue import Queue
 from tkinter import filedialog
 from typing import List, Optional, TYPE_CHECKING, Any, TypedDict
-from urllib.parse import urlparse
 
+# this import is needed because of an AP assert
 import kvui
 from kivy import Config
 from kivy.core.window import Window
 from kivy.core.image import Image as CoreImage
-from kivy.event import EventDispatcher
 from kivy.clock import Clock, mainthread
 from kivy.lang import Builder
-from kivy.network.urlrequest import UrlRequest, UrlRequestUrllib
 from kivy.properties import StringProperty, NumericProperty, ObjectProperty, ListProperty
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import NoTransition
@@ -46,10 +43,8 @@ from kivy.utils import escape_markup
 
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.dialog import MDDialog
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.label import MDLabel
-from kivymd.uix.progressindicator import MDLinearProgressIndicator
 from kivymd.uix.recycleview import MDRecycleView
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import MDScreen
@@ -57,7 +52,6 @@ from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.widget import MDWidget
 
 
-from logging import Logger
 from worlds.minecraft.downloader import ServerInstallData, StepsStep, SyncStep, BytesToStringStep
 from worlds.minecraft.downloader.Java import DownloadJava
 from worlds.minecraft.downloader.NeoForge import DownloadNeoForge
@@ -67,7 +61,6 @@ version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/ref
 
 if TYPE_CHECKING:
     from worlds.minecraft import MinecraftSettings
-#     import Utils
 import Utils
 Utils.init_logging('MinecraftClient')
 logger = logging.getLogger("MinecraftClient")
@@ -176,7 +169,7 @@ class MinecraftClient(MDApp):
         # self._init_mod_info()
 
     # Handles (re)loading mod info, whether from a successful HTTP request or not
-    def _handle_mod_info(self, resp: Optional[Any] = None) -> None:
+    def _handle_mod_info(self, context: dict[str, Any], resp: Optional[Any] = None) -> None:
         options = get_options()
         fp = os.path.join(options.server_directory, 'ap-version.json')
         logger.info(f"Got response: {resp}")
@@ -213,7 +206,7 @@ class MinecraftClient(MDApp):
             BytesToStringStep(),
             SyncStep(self._handle_mod_info), # Save the latest version (if available)
             # TODO: self.auto_start_server() ?
-        ).run(error_ok=True)
+        ).run(dict(), error_ok=True)
 
     def build(self):
         logger.info(f"building client")
@@ -303,30 +296,33 @@ class MinecraftClient(MDApp):
                 self.server_window.status.text = f"Initializing {self.version['minecraft']}"
 
                 # TODO:(cang) restore
-                # self.window_manager.current = "Server"
+                self.window_manager.current = "Server"
                 self.start_server()
             except KeyError:
                 logger.error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
                 self.log_error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
                 self.apmc_path = None
 
+    def update_progress(self, value: float, content: str):
+        self.server_window.update_progress(value, content)
+
     def set_description(self, text):
         self.apmc["description"] = text
         self.start_server()
 
-    def eula_yes(self):
-        options = get_options()
-        eula_path = os.path.join(options.server_directory, "eula.txt")
-        with open(eula_path, 'r+') as f:
-            text = f.read()
-            if 'false' in text:
-                f.seek(0)
-                f.write(text.replace('false', 'true'))
-                f.truncate()
-        self.start_server()
-
-    def eula_no(self):
-        self.window_manager.current = "Welcome"
+    # def eula_yes(self):
+    #     options = get_options()
+    #     eula_path = os.path.join(options.server_directory, "eula.txt")
+    #     with open(eula_path, 'r+') as f:
+    #         text = f.read()
+    #         if 'false' in text:
+    #             f.seek(0)
+    #             f.write(text.replace('false', 'true'))
+    #             f.truncate()
+    #     self.start_server()
+    #
+    # def eula_no(self):
+    #     self.window_manager.current = "Welcome"
 
     # def download_file(self, url, folder, on_success=None, on_error=None, file_name=None, extract=False,
     #                   message="Downloading Files"):
@@ -346,56 +342,78 @@ class MinecraftClient(MDApp):
         logger = logging.getLogger("MinecraftClient")
         options = get_options()
         # TODO: define better insight/typing into what self.version is
+        self.server_window.show_progress_bar_dialog("Installing Dependencies", "", 100)
+        context: dict[str, Any] = dict()
         StepsStep(
             "Download Dependencies",
             DownloadJava(options.server_directory, self.version['java']),
             DownloadNeoForge(options.server_directory, confirm_prompt, self.version["minecraft"]), # TODO: is there a standalone JAR like fabric now? check history
-            SyncStep(lambda data: (None, os.path.join(data.mods_dir, "Archipelago.jar"), self.version['version'])),
-            DownloadStep(self.version["url"])
-        ).run(on_failure=lambda *args: logger.error(f"Dependency Downloads failed {args}", exc_info=True))
+            SyncStep(lambda context, data: (None, os.path.join(data.mods_dir, "Archipelago.jar"), self.version['version'])),
+            DownloadStep(self.version["url"]),
+            SyncStep(self.copy_apmc),
+            SyncStep(lambda *args: self.server_window.close_progress_bar_dialog()),
+            SyncStep(lambda *args: threading.Thread(target=self.server_thread, args=(context,)).start())
+        ).run(
+            context,
+            on_failure=lambda *args: logger.error(f"Dependency Downloads failed {args}", exc_info=True),
+            on_progress=self.update_progress,
+        )
 
-        # TODO: migrate into above (for check_eula, integrate it as a KivyMD-based prompt into the EULA writer in NeoForge.py)
-        # if self.apmc.get("description") is None:
-        #     edit_prompt(title="Set Description", content="Set a description for this world", default="",
-        #                 confirm=lambda text: self.set_description(text))
-        #     return
+    def copy_apmc(self, context: dict[str, Any], *arg):
+        if self.apmc_path is None:
+            return
+        apmc_name = os.path.basename(self.apmc_path)
+        neo_dir = context['neoforge_dir']
+        apdata_dir = os.path.join(neo_dir, 'APData')
+        os.makedirs(apdata_dir, exist_ok=True)
 
-        # if not self.check_eula():
-        #     confirm_prompt(title="EULA Agreement",
-        #                    content="By running this server you agree to the Minecraft EULA"
-        #                            "\nhttps://aka.ms/MinecraftEULA\nDo you agree to the Minecraft Eula?",
-        #                    confirm=lambda _: self.eula_yes(), cancel=lambda _: self.eula_no())
-        #     return
+        # TODO: does this need to be empty??
+        neo_apmc = os.path.join(apdata_dir, apmc_name)
+        if not os.path.exists(neo_apmc):
+            shutil.copy(self.apmc_path, neo_apmc)
 
-        # threading.Thread(target=self.server_thread).start()
-
-    def server_thread(self):
+    def server_thread(self, context: dict[str, Any]):
+        options = get_options()
 
         self.status = ServerStatus.STOPPED
         self.server_window.background_color = (.5, .1, .1, 1)
         world_name = f"Archipelago-{self.apmc['seed_name']}-P{self.apmc['player_id']}"
-        world_dir = os.path.join(self.mc_options.server_directory, world_name)
+        self.server_window.status.text = f"Archipelago-{self.apmc['seed_name']}-{self.apmc['player_name']}"
+        world_dir = os.path.join(options.server_directory, world_name)
         if not os.path.isdir(world_dir):
             os.makedirs(world_dir)
         save_path = os.path.join(world_dir, "save.apmc")
         if not os.path.isfile(save_path):
             with open(save_path, "w") as file:
                 json.dump(self.apmc, file)
-
         os.environ["JAVA_OPTS"] = ""
-        self.server = subprocess.Popen((self.get_jdk(),
-                                        "-jar",
-                                        self.get_server_jar(),
-                                        "--nogui",
-                                        "--world",
-                                        world_name,
-                                        ),
+        # java_dir = context['java_dir']
+        neo_run = context['neoforge_run_args']
+        neo_dir = context['neoforge_dir']
+        # self.server = subprocess.Popen((os.path.join(java_dir, 'bin', 'java'),
+        #                                 "-jar",
+        #                                 self.get_server_jar(),
+        #                                 "--nogui",
+        #                                 "--world",
+        #                                 world_name,
+        #                                 ),
+        #                                stderr=subprocess.PIPE,
+        #                                stdout=subprocess.PIPE,
+        #                                stdin=subprocess.PIPE,
+        #                                encoding="utf-8",
+        #                                text=True,
+        #                                cwd=options.server_directory
+        #                                )
+        cmd = (*neo_run, "--nogui", "--world", world_name)
+        logger.info(f"Invoking: {cmd}")
+        logger.info(f"With working dir: {neo_dir}")
+        self.server = subprocess.Popen(cmd,
                                        stderr=subprocess.PIPE,
                                        stdout=subprocess.PIPE,
                                        stdin=subprocess.PIPE,
                                        encoding="utf-8",
                                        text=True,
-                                       cwd=self.mc_options.server_directory
+                                       cwd=neo_dir,
                                        )
 
         server_queue = Queue()
@@ -642,6 +660,12 @@ class ServerWindow(MDScreen):
     def show_progress_bar_dialog(self, title, content, max):
         self.progress_popup = ProgressBarDialog(title=title, text=content, max=max)
         self.progress_popup.open()
+
+    def update_progress(self, progress: float, content: str):
+        if self.progress_popup is None:
+            return
+        self.progress_popup.progress = progress * 100.0
+        self.progress_popup.progress_text = content
 
     def close_progress_bar_dialog(self):
         if self.progress_popup is not None:

@@ -1,6 +1,6 @@
 import logging
 
-from .Utilities import DownloadStep, FetchStep, SubprocessStep, download_file, jre_paths, ua_header, write_eula
+from .Utilities import DownloadStep, FetchStep, SubprocessStep, download_file, jre_paths, ua_header
 from .Modrinth import download_mod
 from .Java import get_java_path
 from . import ServerInstallData, StepsStep, SyncStep, Step
@@ -28,18 +28,18 @@ class DownloadNeoForge(StepsStep):
         self.logger = logging.getLogger("MinecraftClient")
 
         super().__init__(
-            "Downloading Neo Forge",
+            "Installing Neo Forge",
             SyncStep(lambda *args: print(f"Downloading NeoForge index")),
             FetchStep("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge"),
             SyncStep(self._process_versions),
             ConfirmEula(eula_popup),
             DownloadStep(filepath=self.installer_jar),
             SyncStep(self._process_server),
-            SubprocessStep(),
+            SubprocessStep("Installing NeoForge"),
             SyncStep(self._process_cleanup),
         )
     
-    def _process_versions(self, neo_versions: NeoVersions) -> str:
+    def _process_versions(self,context: dict[str, Any], neo_versions: NeoVersions) -> str:
         self.neo_latest = next(
             (ver for ver in reversed(neo_versions["versions"]) if self.force_version is None or ver.startswith(self.force_version)),
             None
@@ -55,9 +55,9 @@ class DownloadNeoForge(StepsStep):
 
         self.java_path = get_java_path(self.to, 21)
         self.java_path_relative = os.path.relpath(self.java_path, self.root)
-        self.logger.info(f"Using Java at {self.java_path_relative}")
+        self.logger.info(f"Using Java at {self.java_path}")
 
-        self.all_run = [self.java_path_relative, f"-Xmx{self.heap}", f"-Xms{self.heap}", "@user_jvm_args.txt"]
+        self.all_run = [self.java_path, f"-Xmx{self.heap}", f"-Xms{self.heap}", "@user_jvm_args.txt"]
         self.windows_run = self.all_run + [f"@libraries/net/neoforged/neoforge/{self.neo_latest}/win_args.txt"]
         self.unix_run = self.all_run + [f"@libraries/net/neoforged/neoforge/{self.neo_latest}/unix_args.txt"]
         self.system_run = self.windows_run if Utils.is_windows else (self.unix_run if Utils.is_linux else None)
@@ -66,6 +66,9 @@ class DownloadNeoForge(StepsStep):
         os.makedirs(self.mods, exist_ok=True)
 
         self.version_path = os.path.join(self.root, "neo_version")
+        context['neoforge_dir'] = self.root
+        context['neoforge_mod_dir'] = self.mods
+        context['neoforge_run_args'] = self.system_run
 
         if os.path.exists(self.version_path):
             with open(self.version_path, 'r') as f:
@@ -76,7 +79,7 @@ class DownloadNeoForge(StepsStep):
         self.logger.info(f"Downloading NeoForge {self.neo_latest} installer")
         return f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{self.neo_latest}/neoforge-{self.neo_latest}-installer.jar", None, self.neo_latest, self.root
 
-    def _process_server(self, req):
+    def _process_server(self, context: dict[str, Any], req):
         if req is False:
             # install is skipped
             return
@@ -85,7 +88,11 @@ class DownloadNeoForge(StepsStep):
         java_path = get_java_path(self.to, 21)
         return (java_path, "-jar", self.installer_jar, "--installServer"), {"cwd": self.root, "stderr": subprocess.DEVNULL, "stdout": subprocess.DEVNULL}
 
-    def _process_cleanup(self, req):
+    def _process_cleanup(self, context: dict[str, Any], req):
+        bat_file = os.path.join(self.root, "run.bat")
+        sh_file = os.path.join(self.root, "run.sh")
+        context['neoforge_run'] = bat_file if Utils.is_windows else (sh_file if Utils.is_linux else None)
+
         if req is False:
             # install is skipped
             return ServerInstallData(root_dir=self.root, mods_dir=self.mods, run_args=self.system_run)
@@ -93,11 +100,9 @@ class DownloadNeoForge(StepsStep):
         os.unlink(self.installer_jar)
         os.unlink(self.installer_jar + '.version')
 
-        bat_file = os.path.join(self.root, "run.bat")
         with open(bat_file, 'w') as f:
             f.write(f"@echo off\nstart {' '.join(self.windows_run)} %* > log.txt 2> errorlog.txt")
         
-        sh_file = os.path.join(self.root, "run.sh")
         with open(sh_file, 'w') as f:
             f.write(f"#!/bin/bash\nexec {' '.join(self.unix_run)} \"$@\" > log.txt 2> errorlog.txt")
 
@@ -114,14 +119,17 @@ class ConfirmEula(Step):
         self.confirm_prompt = confirm_prompt
         self.outdir: str | None = None
 
-    def run(self, *previous: Any,
+    def run(self,
+            context: dict[str, Any],
+            *previous: Any,
             on_success: Callable | None = None,
             on_failure: Callable | None = None,
             on_progress: Callable | None = None,
             error_ok: bool = False):
 
-        if not previous and not len(previous) > 3:
-            raise Exception("Unexpected in put arguments to eula confirmation")
+        if not previous or not len(previous) > 3:
+            on_success(False)
+            return
 
         self.outdir = previous[3]
         file = os.path.join(self.outdir, "eula.txt")

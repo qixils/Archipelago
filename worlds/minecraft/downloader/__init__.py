@@ -11,10 +11,12 @@ class ServerInstallData(NamedTuple):
 
 class Step(ABC):
     @abstractmethod
-    def run(self, *previous: Any,
+    def run(self,
+            context: dict[str, Any],
+            *previous: Any,
             on_success: Callable | None = None,
             on_failure: Callable | None = None,
-            on_progress: Callable[[float], None] | None = None,
+            on_progress: Callable[[float, str], None] | None = None,
             error_ok: bool = False):
         pass
 
@@ -28,29 +30,32 @@ class StepsStep(Step):
         self.name = name
         # self.logger.setLevel('DEBUG')
 
-    def run(self, *previous: Any,
+    def run(self, context: dict[str, Any],
+            *previous: Any,
             on_success: Callable | None = None,
             on_failure: Callable | None = None,
-            on_progress: Callable[[float], None] | None = None,
+            on_progress: Callable[[float, str], None] | None = None,
             error_ok: bool = False):
-        self._run_index(0, *previous, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
+        self._run_index(0, context, *previous, on_success=on_success, on_failure=on_failure, on_progress=on_progress, error_ok=error_ok)
     
     def _run_index(self, index: int,
+                   context: dict[str, Any],
                    *previous: Any,
                    on_success: Callable | None = None,
                    on_failure: Callable | None = None,
-                   on_progress: Callable[[float], None] | None = None,
+                   on_progress: Callable[[float, str], None] | None = None,
                    error_ok: bool = False):
         self.logger.info(f"running step {index}; {type(self)}")
         if len(self.steps) <= index:
             if on_progress is not None:
-                on_progress(1.0)     
+                on_progress(1.0, self.name)
             if on_success is not None:
                 on_success(*previous)
             return
         if on_progress is not None:
-            on_progress(index / len(self.steps))
+            on_progress(index / len(self.steps), self.name)
         success_lambda = lambda *result: self._run_index(index + 1,
+                                                         context,
                                                          *result if type(result) is tuple else result,
                                                          on_success=on_success,
                                                          on_failure=on_failure,
@@ -58,10 +63,11 @@ class StepsStep(Step):
                                                          error_ok=error_ok)
         try:
             self.steps[index].run(
+                context,
                 *previous,
                 on_success=success_lambda,
                 on_failure=on_failure if not error_ok else (lambda err: success_lambda(*previous)),
-                on_progress=lambda value: self._emit_on_progress(index=index, extra=value, name=self.name, on_progress=on_progress),
+                on_progress=lambda value, name: self._emit_on_progress(index=index, extra=value, name=name, on_progress=on_progress),
                 error_ok=error_ok,
             )
         except Exception as e:
@@ -71,7 +77,7 @@ class StepsStep(Step):
             elif on_failure is not None:
                 on_failure(e)
     
-    def _emit_on_progress(self, index: int, name: str, extra: float = 0, on_progress: Callable | None = None):
+    def _emit_on_progress(self, index: int, name: str, extra: float = 0, on_progress: Callable[[float, str], None] | None = None):
         if on_progress is None:
             return
 
@@ -81,8 +87,8 @@ class StepsStep(Step):
             extra = max(0.0, min(1.0, extra))
 
         # TODO(cang): figure out name thingy
-        # on_progress((index / len(self.steps)) + (extra / len(self.steps)), name or self.steps[index].name or self.name)
-        on_progress((index / len(self.steps)) + (extra / len(self.steps)))
+        on_progress((index / len(self.steps)) + (extra / len(self.steps)), name or self.steps[index].name or self.name)
+        # on_progress((index / len(self.steps)) + (extra / len(self.steps)))
 
 
 
@@ -93,9 +99,15 @@ class SyncStep(Step):
         self.fn = fn
         self.logger = logging.Logger("MinecraftClient",level="DEBUG")
 
-    def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None, error_ok: bool = False):
+    def run(self,
+            context: dict[str, Any],
+            *previous: Any,
+            on_success: Callable | None = None,
+            on_failure: Callable | None = None,
+            on_progress: Callable[[float, str], None] | None = None,
+            error_ok: bool = False):
         try:
-            res = self.fn(*previous if type(previous) is tuple else previous)
+            res = self.fn(context, *previous if type(previous) is tuple else previous)
             self.logger.info(f"Got result {res}")
             if on_success is not None:
                 if res is None or type(res) is not tuple:
@@ -113,5 +125,5 @@ class BytesToStringStep(SyncStep):
 
 
     @staticmethod
-    def bytes_to_string(data: bytes):
+    def bytes_to_string(context: dict[str, Any], data: bytes):
         return data.decode('utf-8')

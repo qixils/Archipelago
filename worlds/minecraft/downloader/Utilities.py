@@ -29,14 +29,11 @@ class DownloadStep(Step):
         self.logger = logging.getLogger("MinecraftClient")
     
     def run(self,
+            context: dict[str, Any],
             *args,
-            # res_url: Any,
-            # res_filepath: Any,
-            # res_ver: Any,
-            # *,
             on_success: Callable | None = None,
             on_failure: Callable | None = None,
-            on_progress: Callable[[float], None] | None = None,
+            on_progress: Callable[[float, str], None] | None = None,
             error_ok: bool = False):
         url = self.url
         filepath = self.filepath
@@ -75,10 +72,11 @@ class DownloadStep(Step):
                         on_success(False)
                         return
         self.logger.info(f"Sending request to {url}; downloading to {filepath}")
+        # Using requests over urllib, cause redirects
         UrlRequestRequests(url,
                    file_path=filepath,
                    # TODO(cang): figure out progress name
-                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size if total_size > 0 else 0),#, f"Downloading {os.path.basename(filepath)}..."),
+                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size if total_size > 0 else 0, f"Downloading {os.path.basename(filepath)}..."),
                    # on_progress=lambda req, current_size, total_size: self.logger.info(f"{req.resp_status}"),
                    on_success=lambda req, res: self._on_success(res, version=version, on_success=on_success),
                    on_error=on_failure,
@@ -101,10 +99,12 @@ class FetchStep(Step):
         self.logger = logging.getLogger("MinecraftClient")
 
     # def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
-    def run(self, *previous: Any,
+    def run(self,
+            context: dict[str, Any],
+            *previous: Any,
             on_success: Callable | None = None,
             on_failure: Callable | None = None,
-            on_progress: Callable[[float], None] | None = None,
+            on_progress: Callable[[float, str], None] | None = None,
             error_ok: bool = False):
         if previous:
             url = previous[0] if previous[0] is not None and type(previous[0]) is str else self.url
@@ -112,18 +112,21 @@ class FetchStep(Step):
         payload_lambda = lambda req, resp: on_success(resp)
         UrlRequest(url,
                    # on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, f"Loading data..."),
-                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size),
+                   on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, "Loading data..."),
                    on_success=payload_lambda,
                    on_error=on_failure,
                    ca_file=certifi.where())
 
 class SubprocessStep(Step):
-    def __init__(self, *args):
+    def __init__(self, name: str, *args):
         super().__init__()
         self.args = args
         self.logger = logging.getLogger("MinecraftClient")
+        self.name = name
     
-    def run(self, *previous,
+    def run(self,
+            context: dict[str, Any],
+            *previous,
             on_success: Callable | None = None,
             on_failure: Callable | None = None,
             on_progress: Callable | None = None,
@@ -211,22 +214,22 @@ def download_file(path: str, url: str, version: Optional[str] = None) -> None:
         with open(version_path, 'w') as f:
             f.write(version)
 
-def write_eula(folder: str) -> None:
-    file = os.path.join(folder, "eula.txt")
-    if os.path.exists(file):
-        with open(file, 'r') as f:
-            if 'eula=true' in f.read():
-                return
-
-    print("")
-    print("Please note that by running a Minecraft server, you are indicating your agreement to Minecraft's EULA (https://aka.ms/MinecraftEULA).")
-    confirmation = input("Continue? (Y/n): ")
-    if len(confirmation) > 0 and not confirmation.lower().startswith('y'):
-        sys.exit(0)
-
-    contents = "eula=true"
-    with open(file, 'w') as f:
-        f.write(contents)
+# def write_eula(folder: str) -> None:
+#     file = os.path.join(folder, "eula.txt")
+#     if os.path.exists(file):
+#         with open(file, 'r') as f:
+#             if 'eula=true' in f.read():
+#                 return
+#
+#     print("")
+#     print("Please note that by running a Minecraft server, you are indicating your agreement to Minecraft's EULA (https://aka.ms/MinecraftEULA).")
+#     confirmation = input("Continue? (Y/n): ")
+#     if len(confirmation) > 0 and not confirmation.lower().startswith('y'):
+#         sys.exit(0)
+#
+#     contents = "eula=true"
+#     with open(file, 'w') as f:
+#         f.write(contents)
 
 def write_run(jar: str, java: int) -> None:
     jre = jre_paths[java]

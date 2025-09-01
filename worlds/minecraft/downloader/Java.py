@@ -1,13 +1,14 @@
 import logging
 
 from . import StepsStep, SyncStep
-from .Utilities import DownloadStep, FetchStep, download_file, jre_paths, ua_header, write_eula
+from .Utilities import DownloadStep, FetchStep, download_file, jre_paths, ua_header
 from Utils import is_windows, is_linux
 import os
 import requests
 import zipfile
 import platform
-from typing import TypedDict
+from typing import TypedDict, Any
+
 
 class Download(TypedDict):
     checksum: str
@@ -52,7 +53,7 @@ class DownloadJava(StepsStep):
     def __init__(self, to: str, version: int):
         self.to = to
         self.version = version
-        self.outpath = os.path.join(self.to, "java", jre_paths[self.version])
+        self.outpath = os.path.join(to, "java", jre_paths[self.version])
         self.zip_path = os.path.join(self.outpath, "jre.zip")
         self.logger = logging.getLogger("MinecraftClient")
         super().__init__(
@@ -64,7 +65,11 @@ class DownloadJava(StepsStep):
             SyncStep(self._process_extract),
         )
 
-    def _get_api_url(self) -> str:
+    def run(self, context, *args, **kwargs):
+        context['java_dir'] = self.outpath
+        super().run(context, *args, **kwargs)
+
+    def _get_api_url(self, context: dict[str, Any]) -> str:
         self.logger.info(f"Fetching Java {self.version} versions")
 
         system = "windows" if is_windows else "linux" if is_linux else None
@@ -75,9 +80,8 @@ class DownloadJava(StepsStep):
 
         return f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?architecture={arch}&image_type=jre&os={system}&vendor=eclipse"
     
-    def _process_assets(self, assets: list[Asset]) -> tuple:
+    def _process_assets(self, context: dict[str, Any], assets: list[Asset]) -> tuple:
         data: Asset = assets[0]
-
         os.makedirs(self.outpath, exist_ok=True)
         release_path = os.path.join(self.outpath, "release")
         semver = None
@@ -94,7 +98,7 @@ class DownloadJava(StepsStep):
         self.logger.info(f"Downloading Java {data['version']['semver']}")
         return data["binary"]["package"]["link"], None, data['version']['semver']
     
-    def _process_extract(self, res):
+    def _process_extract(self,context: dict[str, Any], res):
         if not res:
             # download is skipped
             return
