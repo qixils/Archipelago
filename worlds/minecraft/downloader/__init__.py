@@ -25,10 +25,8 @@ class StepsStep(Step):
     def __init__(self, name: str, *steps: Step):
         super().__init__()
         self.steps = steps
-        # Utils.init_logging("Minecraft")
-        self.logger = logging.Logger("MinecraftClient",level="DEBUG")
+        self.logger = logging.Logger("MinecraftClient")
         self.name = name
-        # self.logger.setLevel('DEBUG')
 
     def run(self, context: dict[str, Any],
             *previous: Any,
@@ -45,7 +43,9 @@ class StepsStep(Step):
                    on_failure: Callable | None = None,
                    on_progress: Callable[[float, str], None] | None = None,
                    error_ok: bool = False):
-        self.logger.info(f"running step {index}; {type(self)}")
+
+        self.logger.debug(f"running step {index}; {type(self)}")
+
         if len(self.steps) <= index:
             if on_progress is not None:
                 on_progress(1.0, self.name)
@@ -86,9 +86,7 @@ class StepsStep(Step):
         else:
             extra = max(0.0, min(1.0, extra))
 
-        # TODO(cang): figure out name thingy
         on_progress((index / len(self.steps)) + (extra / len(self.steps)), name or self.steps[index].name or self.name)
-        # on_progress((index / len(self.steps)) + (extra / len(self.steps)))
 
 
 
@@ -97,7 +95,7 @@ class SyncStep(Step):
     def __init__(self, fn: Callable):
         super().__init__()
         self.fn = fn
-        self.logger = logging.Logger("MinecraftClient",level="DEBUG")
+        self.logger = logging.Logger("MinecraftClient")
 
     def run(self,
             context: dict[str, Any],

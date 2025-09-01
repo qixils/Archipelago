@@ -15,7 +15,6 @@ from argparse import Namespace
 from base64 import b64encode
 from collections import defaultdict
 
-from worlds.LauncherComponents import SuffixIdentifier
 
 if __name__ == '__main__':
     # makes this module runnable from its world folder.
@@ -190,7 +189,6 @@ class MinecraftClient(MDApp):
             BytesToStringStep(),
             SyncStep(self._handle_mod_info), # Save the latest version (if available)
             SyncStep(self.auto_start_server),
-            # TODO: self.auto_start_server() ?
         ).run(dict(), error_ok=True)
 
     def build(self):
@@ -203,7 +201,6 @@ class MinecraftClient(MDApp):
         self.window_manager.add_widget(self.welcome_window)
         self.window_manager.add_widget(self.server_window)
         logger.info(f"client built")
-
 
         logger.info(f"binding on close request")
         Window.bind(on_request_close=self.on_request_close)
@@ -221,7 +218,8 @@ class MinecraftClient(MDApp):
             self.send_command("stop")
             Clock.schedule_interval(self.close, 1 / 60)
             return True
-        # sys.exit()
+        # Seems like calling sys.exit() here freaks out
+        # But letting it shutdown naturally works out ok
 
 
     def close(self, dt):
@@ -251,7 +249,7 @@ class MinecraftClient(MDApp):
 
     def auto_start_server(self, context: dict[str, Any], *ignore):
         Clock.schedule_once(self.init, 1)
-        self.apmc_path = os.path.abspath(self.args.apmc_file) if self.args.apmc_file else None
+        self.apmc_path = os.path.abspath(self.args.apmc_file) if type(self.args.apmc_file) is str else None
         if self.apmc_path:
             self.open_apmc(path=self.apmc_path)
 
@@ -266,6 +264,7 @@ class MinecraftClient(MDApp):
         if self.apmc_path is None or self.apmc_path == "" or os.path.isfile(self.apmc_path) is False:
             return
 
+        # APContainer makes zips
         if zipfile.is_zipfile(self.apmc_path):
             with zipfile.ZipFile(self.apmc_path, 'r') as zf:
                 for entry in zf.infolist():
@@ -314,9 +313,7 @@ class MinecraftClient(MDApp):
     @mainthread
     def start_server(self) -> None:
         Utils.init_logging("MinecraftClient" )
-        logger = logging.getLogger("MinecraftClient")
         options = get_options()
-        # TODO: define better insight/typing into what self.version is
         self.server_window.show_progress_bar_dialog("Installing Dependencies", "", 100)
         context: dict[str, Any] = dict()
         StepsStep(
@@ -330,9 +327,18 @@ class MinecraftClient(MDApp):
             SyncStep(lambda *args: threading.Thread(target=self.server_thread, args=(context,)).start())
         ).run(
             context,
-            on_failure=lambda *args: logger.error(f"Dependency Downloads failed {args}", exc_info=True),
+            on_failure=self.handle_server_start_failure,
             on_progress=self.update_progress,
         )
+
+    def handle_server_start_failure(self, *args):
+        logger.error(f"Dependency Downloads failed {args}", exc_info=True)
+        self.server_window.close_progress_bar_dialog()
+        self.window_manager.current = "Welcome"
+        info_dialog("Server Start Failure", content="""
+        An error occurred while starting the server.
+        Please check the logs.
+        """)
 
     def copy_apmc(self, context: dict[str, Any], *arg):
         if self.apmc_path is None:
@@ -342,7 +348,6 @@ class MinecraftClient(MDApp):
         apdata_dir = os.path.join(neo_dir, 'APData')
         os.makedirs(apdata_dir, exist_ok=True)
 
-        # TODO: does this need to be empty??
         neo_apmc = os.path.join(apdata_dir, apmc_name)
         if not os.path.exists(neo_apmc):
             with open(neo_apmc, 'wb') as f:
@@ -363,23 +368,9 @@ class MinecraftClient(MDApp):
             with open(save_path, "w") as file:
                 json.dump(self.apmc, file)
         os.environ["JAVA_OPTS"] = ""
-        # java_dir = context['java_dir']
         neo_run = context['neoforge_run_args']
         neo_dir = context['neoforge_dir']
-        # self.server = subprocess.Popen((os.path.join(java_dir, 'bin', 'java'),
-        #                                 "-jar",
-        #                                 self.get_server_jar(),
-        #                                 "--nogui",
-        #                                 "--world",
-        #                                 world_name,
-        #                                 ),
-        #                                stderr=subprocess.PIPE,
-        #                                stdout=subprocess.PIPE,
-        #                                stdin=subprocess.PIPE,
-        #                                encoding="utf-8",
-        #                                text=True,
-        #                                cwd=options.server_directory
-        #                                )
+
         cmd = (*neo_run, "--nogui", "--world", world_name)
         logger.info(f"Invoking: {cmd}")
         logger.info(f"With working dir: {neo_dir}")
@@ -490,11 +481,6 @@ class DropdownOption(MDGridLayout):
 
 
 class FolderOption(TextOption):
-
-    # def __init__(self, **kwargs):
-    #     super().__init__(**kwargs)
-    #     self.options = get_options()
-    #     self.value = self.options.server_directory
 
     def button_press(self):
         # TODO: Replace filedialog from KTinker with MDDialog?
@@ -703,7 +689,7 @@ class WelcomeWindow(MDScreen):
 
 
 def add_to_launcher_components():
-    from worlds.LauncherComponents import Component, components, Type
+    from worlds.LauncherComponents import Component, components, Type, SuffixIdentifier
     components.append(Component("Minecraft Client",
                                 icon="mcicon",
                                 func=launch_subprocess,
@@ -719,20 +705,6 @@ def mc_launch(*arguments):
     parser = argparse.ArgumentParser()
     parser.add_argument("apmc_file", default=None, nargs='?', help="Path to an Archipelago Minecraft data file (.apmc)")
     args = parser.parse_args(arguments)
-    # os.environ["KIVY_NO_CONSOLELOG"] = "1"
-    # os.environ["KIVY_NO_FILELOG"] = "1"
-    # os.environ["KIVY_NO_ARGS"] = "1"
-    # os.environ["KIVY_LOG_ENABLE"] = "0"
-
-    # os.environ["KIVY_NO_CONSOLELOG"] = "1"
-    # os.environ["KIVY_NO_FILELOG"] = "1"
-    # os.environ["KIVY_NO_ARGS"] = "1"
-    # os.environ["KIVY_LOG_ENABLE"] = "1"
-    #
-    # Config.set("input", "mouse", "mouse,disable_multitouch")
-    # Config.set("kivy", "exit_on_escape", "0")
-    # Config.set("graphics", "multisamples", "0")
-    # print("hello")
     Config.set("network", "implementation", "requests")
     MinecraftClient(args).run()
 
