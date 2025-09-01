@@ -214,23 +214,6 @@ def download_file(path: str, url: str, version: Optional[str] = None) -> None:
         with open(version_path, 'w') as f:
             f.write(version)
 
-# def write_eula(folder: str) -> None:
-#     file = os.path.join(folder, "eula.txt")
-#     if os.path.exists(file):
-#         with open(file, 'r') as f:
-#             if 'eula=true' in f.read():
-#                 return
-#
-#     print("")
-#     print("Please note that by running a Minecraft server, you are indicating your agreement to Minecraft's EULA (https://aka.ms/MinecraftEULA).")
-#     confirmation = input("Continue? (Y/n): ")
-#     if len(confirmation) > 0 and not confirmation.lower().startswith('y'):
-#         sys.exit(0)
-#
-#     contents = "eula=true"
-#     with open(file, 'w') as f:
-#         f.write(contents)
-
 def write_run(jar: str, java: int) -> None:
     jre = jre_paths[java]
     jar_name = os.path.basename(jar)

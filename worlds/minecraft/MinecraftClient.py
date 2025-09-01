@@ -13,8 +13,6 @@ import time
 from argparse import Namespace
 from collections import defaultdict
 
-
-
 if __name__ == '__main__':
     # makes this module runnable from its world folder.
     sys.path.remove(os.path.dirname(__file__))
@@ -52,7 +50,7 @@ from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.widget import MDWidget
 
 
-from worlds.minecraft.downloader import ServerInstallData, StepsStep, SyncStep, BytesToStringStep
+from worlds.minecraft.downloader import StepsStep, SyncStep, BytesToStringStep
 from worlds.minecraft.downloader.Java import DownloadJava
 from worlds.minecraft.downloader.NeoForge import DownloadNeoForge
 from worlds.minecraft.downloader.Utilities import DownloadStep, FetchStep
@@ -65,8 +63,6 @@ import Utils
 Utils.init_logging('MinecraftClient')
 logger = logging.getLogger("MinecraftClient")
 logger.setLevel('DEBUG')
-# TODO: Import/fix options.py and/or whatever is being generated in host.yaml
-# options: Optional['MinecraftSettings'] = None
 args: Namespace
 
 class VersionsJson(TypedDict):
@@ -129,21 +125,6 @@ def get_recent_items(options: 'MinecraftSettings') -> List:
                 description = save["description"]
             saves.append((description, directory))
     return saves
-
-# class MinecraftOptions(EventDispatcher):
-#     server_directory = StringProperty()
-#     max_heap_size = StringProperty()
-#     min_heap_size = StringProperty()
-#     release_channel = StringProperty()
-#
-#     def __init__(self, options: 'MinecraftSettings', **kwargs):
-#         super().__init__(**kwargs)
-#         self.options = options
-#         self.server_directory = options.server_directory
-#         self.max_heap_size = options.max_heap_size
-#         self.min_heap_size = options.min_heap_size
-#         self.release_channel = options.release_channel
-
 
 
 class MinecraftClient(MDApp):
@@ -295,7 +276,6 @@ class MinecraftClient(MDApp):
                                            self.minecraft_versions[options.release_channel]))
                 self.server_window.status.text = f"Initializing {self.version['minecraft']}"
 
-                # TODO:(cang) restore
                 self.window_manager.current = "Server"
                 self.start_server()
             except KeyError:
@@ -309,32 +289,6 @@ class MinecraftClient(MDApp):
     def set_description(self, text):
         self.apmc["description"] = text
         self.start_server()
-
-    # def eula_yes(self):
-    #     options = get_options()
-    #     eula_path = os.path.join(options.server_directory, "eula.txt")
-    #     with open(eula_path, 'r+') as f:
-    #         text = f.read()
-    #         if 'false' in text:
-    #             f.seek(0)
-    #             f.write(text.replace('false', 'true'))
-    #             f.truncate()
-    #     self.start_server()
-    #
-    # def eula_no(self):
-    #     self.window_manager.current = "Welcome"
-
-    # def download_file(self, url, folder, on_success=None, on_error=None, file_name=None, extract=False,
-    #                   message="Downloading Files"):
-    #     self.server_window.show_progress_bar_dialog("Downloading", message, 100)
-    #
-    #     self.download = Downloader(url=url,
-    #                                folder=folder,
-    #                                download_popup=self.server_window.progress_popup,
-    #                                on_success=on_success, on_error=on_error,
-    #                                on_finish=lambda: self.server_window.close_progress_bar_dialog(),
-    #                                file_name=file_name,
-    #                                extract=extract)
 
     @mainthread
     def start_server(self) -> None:
@@ -739,11 +693,6 @@ def launch_subprocess(*args):
     launch(mc_launch, "Minecraft Client", args)
 
 def mc_launch(*arguments):
-    print("top of launch")
-    # logger.info(f"options: {options}")
-    # for option in ["server_directory", "max_heap_size", "min_heap_size", "release_channel"]:
-    #     if options.get(option, None) is None:
-    #         options.update({option: None})
     parser = argparse.ArgumentParser()
     parser.add_argument("apmc_file", default=None, nargs='?', help="Path to an Archipelago Minecraft data file (.apmc)")
     global args
