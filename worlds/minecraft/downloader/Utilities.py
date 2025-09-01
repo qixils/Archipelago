@@ -75,7 +75,6 @@ class DownloadStep(Step):
         # Using requests over urllib, cause redirects
         UrlRequestRequests(url,
                    file_path=filepath,
-                   # TODO(cang): figure out progress name
                    on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size if total_size > 0 else 0, f"Downloading {os.path.basename(filepath)}..."),
                    # on_progress=lambda req, current_size, total_size: self.logger.info(f"{req.resp_status}"),
                    on_success=lambda req, res: self._on_success(res, version=version, on_success=on_success),
@@ -98,7 +97,6 @@ class FetchStep(Step):
         self.url = url
         self.logger = logging.getLogger("MinecraftClient")
 
-    # def run(self, *previous: Any, on_success: Callable | None = None, on_failure: Callable | None = None, on_progress: Callable | None = None):
     def run(self,
             context: dict[str, Any],
             *previous: Any,
@@ -111,7 +109,6 @@ class FetchStep(Step):
         self.logger.info(f"Requesting to url: {url}")
         payload_lambda = lambda req, resp: on_success(resp)
         UrlRequest(url,
-                   # on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, f"Loading data..."),
                    on_progress=lambda req, current_size, total_size: on_progress is not None and on_progress(current_size / total_size, "Loading data..."),
                    on_success=payload_lambda,
                    on_error=on_failure,

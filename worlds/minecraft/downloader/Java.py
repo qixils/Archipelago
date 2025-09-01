@@ -96,6 +96,7 @@ class DownloadJava(StepsStep):
             return False
 
         self.logger.info(f"Downloading Java {data['version']['semver']}")
+        context['java_semver'] = data['version']['semver']
         return data["binary"]["package"]["link"], None, data['version']['semver']
     
     def _process_extract(self,context: dict[str, Any], res):

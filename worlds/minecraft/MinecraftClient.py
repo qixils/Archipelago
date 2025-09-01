@@ -215,6 +215,8 @@ class MinecraftClient(MDApp):
 
     def on_request_close(self, *arg):
         if self.status == ServerStatus.RUNNING:
+            # TODO(cang): this hangs and I don't know why
+            # It does appear as though the server shuts down?
             self.send_command("stop")
             Clock.schedule_interval(self.close, 1 / 60)
             return True
@@ -291,7 +293,7 @@ class MinecraftClient(MDApp):
         if apmc is not None:
             try:
                 self.apmc = apmc
-                # TODO(cang) This seems brittle, as it looks like there can be multiple valid mc versions
+                # TODO(cang) Not sure if this is supposed to handle multiple valid MC versions
                 self.version = next(filter(lambda entry: entry['data'] == self.apmc["client_version"],
                                            self.minecraft_versions[options.release_channel]))
                 self.server_window.status.text = f"Initializing {self.version['minecraft']}"

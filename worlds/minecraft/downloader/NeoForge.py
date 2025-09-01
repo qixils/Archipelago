@@ -77,7 +77,7 @@ class DownloadNeoForge(StepsStep):
                     return False
 
         self.logger.info(f"Downloading NeoForge {self.neo_latest} installer")
-        return f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{self.neo_latest}/neoforge-{self.neo_latest}-installer.jar", None, self.neo_latest, self.root
+        return f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{self.neo_latest}/neoforge-{self.neo_latest}-installer.jar", None, self.neo_latest
 
     def _process_server(self, context: dict[str, Any], req):
         if req is False:
@@ -127,11 +127,15 @@ class ConfirmEula(Step):
             on_progress: Callable | None = None,
             error_ok: bool = False):
 
-        if not previous or not len(previous) > 3:
+        if not previous or not previous[0]:
             on_success(False)
             return
 
-        self.outdir = previous[3]
+        if 'neoforge_dir' not in context:
+            on_success(False)
+            return
+
+        self.outdir = context['neoforge_dir']
         file = os.path.join(self.outdir, "eula.txt")
         if os.path.exists(file):
             with open(file, 'r') as f:
