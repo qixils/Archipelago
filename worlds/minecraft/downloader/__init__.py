@@ -1,4 +1,4 @@
-from typing import NamedTuple, Any, Callable, Iterable
+from typing import NamedTuple, Any, Callable
 from abc import ABC, abstractmethod
 
 import logging

@@ -1,13 +1,11 @@
 import logging
 
-from .Utilities import DownloadStep, FetchStep, SubprocessStep, download_file, jre_paths, ua_header
-from .Modrinth import download_mod
+from .Utilities import DownloadStep, FetchStep, SubprocessStep
 from .Java import get_java_path
 from . import ServerInstallData, StepsStep, SyncStep, Step
 from typing import TypedDict, Any, Callable
 import Utils
 import os
-import requests
 import subprocess
 
 class NeoVersions(TypedDict):

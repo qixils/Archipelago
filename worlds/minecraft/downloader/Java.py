@@ -1,10 +1,9 @@
 import logging
 
 from . import StepsStep, SyncStep
-from .Utilities import DownloadStep, FetchStep, download_file, jre_paths, ua_header
+from .Utilities import DownloadStep, FetchStep, jre_paths
 from Utils import is_windows, is_linux
 import os
-import requests
 import zipfile
 import platform
 from typing import TypedDict, Any
@@ -118,54 +117,6 @@ class DownloadJava(StepsStep):
                     file.write(zip_ref.read(entry.filename))
 
         os.remove(self.zip_path)
-
-def download_jre(to: str, version: int) -> str:
-    print(f"Fetching Java {version} versions")
-
-    system = "windows" if is_windows else "linux" if is_linux else None
-    if not system:
-        raise Exception("Unsupported operating system for Java download")
-    
-    arch = "aarch64" if platform.machine() in ["aarch64", "arm64"] else "x64"
-
-    api_url = f"https://api.adoptium.net/v3/assets/latest/{version}/hotspot?architecture={arch}&image_type=jre&os={system}&vendor=eclipse"
-    data: Asset = requests.get(api_url, headers=ua_header).json()[0]
-
-    outpath = os.path.join(to, "java", jre_paths[version])
-    os.makedirs(outpath, exist_ok=True)
-    release_path = os.path.join(outpath, "release")
-    semver = None
-
-    if os.path.exists(release_path):
-        with open(release_path, 'r') as file:
-            info = file.read()
-            semver = info.split('SEMANTIC_VERSION="')[1].split('"')[0]
-
-    if data["version"]["semver"] == semver:
-        print("Already up-to-date, skipping download")
-        return
-
-    print(f"Downloading Java {data['version']['semver']}")
-    url = data["binary"]["package"]["link"]
-    zip_path = os.path.join(outpath, "jre.zip")
-    download_file(zip_path, url)
-
-    print(f"Extracting Java {version}")
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        subfolder = zip_ref.namelist()[0]
-        for entry in zip_ref.infolist()[1:-1]:
-            if entry.is_dir():
-                continue
-            relative = entry.filename[len(subfolder):]
-            filepath = os.path.join(outpath, *relative.split("/"))
-            dirpath = os.path.dirname(filepath)
-            os.makedirs(dirpath, exist_ok=True)
-            with open(filepath, 'wb') as file:
-                file.write(zip_ref.read(entry.filename))
-
-    os.remove(zip_path)
-
-    return get_java_path(to, version)
 
 def get_java_path(to: str, version: int) -> str:
     jre = jre_paths[version]

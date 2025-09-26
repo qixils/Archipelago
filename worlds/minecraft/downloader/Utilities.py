@@ -1,14 +1,13 @@
 import logging
 import os
 import subprocess
-import sys
 import threading
 
 import certifi
 import requests
 from typing import Any, Callable, Optional
 from . import Step
-from kivy.network.urlrequest import UrlRequest, UrlRequestUrllib, UrlRequestRequests
+from kivy.network.urlrequest import UrlRequest, UrlRequestRequests
 
 ua = "qixils/minecraft-crowdcontrol/1.0.0"
 ua_header = {"User-Agent": ua}
@@ -146,20 +145,6 @@ class SubprocessStep(Step):
         on_exit(True)
         
 
-def mkdir(dir: str, empty: bool = False) -> str:
-    os.makedirs(dir, exist_ok=True)
-
-    if empty:
-        # Delete all files and subdirectories in the directory
-        for filename in os.listdir(dir):
-            file_path = os.path.join(dir, filename)
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                os.rmdir(file_path)
-
-    return dir
-
 def is_semver_ge(new_semver: str, old_semver: str) -> bool:
     new_parts = new_semver.split(".")
     old_parts = old_semver.split(".")
@@ -205,13 +190,4 @@ def download_file(path: str, url: str, version: Optional[str] = None) -> None:
     if version is not None:
         with open(version_path, 'w') as f:
             f.write(version)
-
-def write_run(jar: str, java: int) -> None:
-    jre = jre_paths[java]
-    jar_name = os.path.basename(jar)
-    bat_file = os.path.join(os.path.dirname(jar), "run.bat")
-    
-    with open(bat_file, 'w') as f:
-        f.write(f"@echo off\n"
-                f"start ..\\java\\{jre}\\bin\\java.exe -Xmx2048M -Xms2048M -jar {jar_name} nogui > log.txt 2> errorlog.txt")
 

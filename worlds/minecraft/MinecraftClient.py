@@ -11,7 +11,6 @@ import sys
 import threading
 import time
 import zipfile
-from argparse import Namespace
 from base64 import b64encode
 from collections import defaultdict
 
