@@ -66,6 +66,9 @@ def can_brew_potions(world: "MinecraftWorld", state: CollectionState, player: in
     return state.has('Blaze Rods', player) and state.has('Brewing', player) and has_bottle(world, state, player)
 
 
+def can_excavate(state: CollectionState, player: int) -> bool:
+    return has_copper_ingots(state, player) and state.has('Brush', player)
+
 def can_piglin_trade(world: "MinecraftWorld", state: CollectionState, player: int) -> bool:
     return (has_gold_ingots(world, state, player)
             and (
@@ -234,6 +237,16 @@ def get_rules_lookup(world, player: int):
                                                 and has_structure_compass(world, state, "Nether Structure 2", player),
             "The End Structure": lambda state: can_adventure(world, state, player)
                                                and has_structure_compass(world, state, "The End Structure", player),
+            "Ocean": lambda state: can_adventure(world, state, player)
+                                   and has_structure_compass(world, state, "Ocean", player),
+            "Dark Forest": lambda state: can_adventure(world, state, player)
+                                         and has_structure_compass(world, state, "Dark Forest", player),
+            "Deep Dark": lambda state: can_adventure(world, state, player)
+                                       and has_iron_ingots(world, state, player)
+                                       and state.has("Progressive Tools", player, 2)
+                                       and has_structure_compass(world, state, "Deep Dark", player),
+            "Ruins": lambda state: can_adventure(world, state, player)
+                                   and has_structure_compass(world, state, "Ruins", player),
         },
         "locations": {
             "Ender Dragon": lambda state: can_respawn_ender_dragon(world, state, player)
@@ -281,6 +294,8 @@ def get_rules_lookup(world, player: int):
                                                    and has_gold_ingots(world, state, player)  # Absorption
                                                    and state.can_reach_region('End City', player)  # Levitation
                                                    and state.can_reach_region('The Nether', player)  # potion ingredients
+                                                   and state.can_reach_region('Ocean Monument', player)  # Heart of the Sea, Dolphin's Grace, Mining Fatigue
+                                                   and state.can_reach_region('Ancient City', player)  # Darkness
                                                    and state.has("Fishing Rod", player)  # Pufferfish, Nautilus Shells; spectral arrows
                                                    and state.has("Archery", player)
                                                    and state.can_reach_location("Bring Home the Beacon", player)  # Haste
@@ -289,9 +304,10 @@ def get_rules_lookup(world, player: int):
                                       and state.has("Progressive Tools", player, 2)
                                       and has_iron_ingots(world, state, player),
             "Spooky Scary Skeleton": lambda state: basic_combat(world, state, player),
-            "Two by Two": lambda state: has_iron_ingots(world, state, player)
+            "Two by Two": lambda state: can_excavate(world, state, player)
+                                        and state.can_reach_region("Ocean Monument", player)  # Sniffers
                                         and state.has("Bucket", player)
-                                        and can_adventure(world, state, player),
+                                        and state.can_reach_region("Village", player),  # Axolotls, Cats
             "Two Birds, One Arrow": lambda state: craft_crossbow(world, state, player)
                                                   and can_enchant(world, state, player),
             "Who's the Pillager Now?": lambda state: craft_crossbow(world, state, player),
@@ -327,10 +343,17 @@ def get_rules_lookup(world, player: int):
                                           or state.can_reach_region('Village', player),
             "You Need a Mint": lambda state: can_respawn_ender_dragon(world, state, player)
                                              and has_bottle(world, state, player),
-            "Monsters Hunted": lambda state: (can_respawn_ender_dragon(world, state, player)
-                                              and can_kill_ender_dragon(world, state, player)
-                                              and can_kill_wither(world, state, player)
-                                              and state.has("Fishing Rod", player)),
+            "Monsters Hunted": lambda state: can_respawn_ender_dragon(world, state, player) # Ghast, Hoglin, Magma Cube, Piglin
+                                             and can_kill_ender_dragon(world, state, player)  # Ender Dragon, Enderman, Endermite, Silverfish
+                                             and can_kill_wither(world, state, player) # Blaze, Wither, Wither Skeleton, Zombified Piglin
+                                             and state.can_reach_location("Hero of the Village", player) # Evoker, Pillager, Ravager, Vex, Vindicator
+                                             and state.can_reach_region('Bastion Remnant', player)
+                                             and state.can_reach_region('End City', player) # Piglin Brute; Shulker
+                                             and state.can_reach_region('Ocean Monument', player) # Drowned
+                                             and (
+                                                 (can_brew_potions(world, state, player) and state.has("Fishing Rod", player)) # Water Breathing Potions for Elder Guardian, Guardian
+                                                 or (can_enchant(world, state, player) and state.has("Bucket", player)) # Aqua Affinity/Respiration and Milk/Axolotls for Elder Guardian, Guardian
+                                             ),
             "Enchanter": lambda state: can_enchant(world, state, player),
             "Voluntary Exile": lambda state: basic_combat(world, state, player),
             "Eye Spy": lambda state: enter_stronghold(world, state, player),
@@ -339,7 +362,11 @@ def get_rules_lookup(world, player: int):
                                                  and has_diamond_pickaxe(world, state, player)
                                                  and has_gold_ingots(world, state, player)),
             "Postmortal": lambda state: complete_raid(world, state, player),
-            "Adventuring Time": lambda state: can_adventure(world, state, player),
+            "Adventuring Time": lambda state: can_adventure(world, state, player)
+                                              and state.can_reach_region('Ocean Monument', player) # All Ocean variants except for Warm Ocean
+                                              and state.can_reach_region('Woodland Mansion', player)
+                                              and state.can_reach_region('Ancient City', player) # Dark Forest; Deep Dark
+                                              and state.can_reach_region('Trail Ruins', player), # Jungle, Birch Forest, Old Growth Birch Forest, all Taiga variants
             "Hero of the Village": lambda state: complete_raid(world, state, player),
             "Hidden in the Depths": lambda state: can_brew_potions(world, state, player)
                                                   and state.has("Bed", player)
@@ -362,7 +389,7 @@ def get_rules_lookup(world, player: int):
                                              and state.has('Fishing Rod', player),
             "Diamonds!": lambda state: state.has("Progressive Tools", player, 2)
                                        and has_iron_ingots(world, state, player),
-            "A Throwaway Joke": lambda state: can_adventure(world, state, player),
+            "A Throwaway Joke": lambda state: basic_combat(world, state, player),
             "Sticky Situation": lambda state: state.has("Campfire", player)
                                               and has_bottle(world, state, player),
             "Ol' Betsy": lambda state: craft_crossbow(world, state, player),
@@ -404,8 +431,7 @@ def get_rules_lookup(world, player: int):
                                                  and state.has('Bucket', player),
             "The Healing Power of Friendship": lambda state: has_iron_ingots(world, state, player)
                                                              and state.has('Bucket', player),
-            "Is It a Bird?": lambda state: has_spyglass(world, state, player)
-                                           and can_adventure(world, state, player),
+            "Is It a Bird?": lambda state: has_spyglass(world, state, player),
             "Is It a Balloon?": lambda state: has_spyglass(world, state, player),
             "Is It a Plane?": lambda state: has_spyglass(world, state, player)
                                             and can_respawn_ender_dragon(world, state, player),
@@ -421,7 +447,7 @@ def get_rules_lookup(world, player: int):
             "Caves & Cliffs": lambda state: has_iron_ingots(world, state, player)
                                             and state.has('Bucket', player)
                                             and state.has('Progressive Tools', player, 2),
-            "Feels like home": lambda state: has_iron_ingots(world, state, player)
+            "Feels Like Home": lambda state: has_iron_ingots(world, state, player)
                                               and state.has('Bucket', player)
                                               and state.has('Fishing Rod', player)
                                               and (
@@ -442,7 +468,11 @@ def get_rules_lookup(world, player: int):
                                          and overworld_villager(world, state, player),
             "Birthday Song": lambda state: state.can_reach_location("The Lie", player)
                                            and state.has("Progressive Tools", player, 2)
-                                           and has_iron_ingots(world, state, player),
+                                           and has_iron_ingots(world, state, player)
+                                           and (
+                                               state.can_reach_region('Pillager Outpost', player)
+                                               or state.can_reach_region('Woodland Mansion', player)
+                                            ),
             "Bukkit Bukkit": lambda state: state.has("Bucket", player)
                                            and has_iron_ingots(world, state, player)
                                            and can_adventure(world, state, player),
@@ -456,6 +486,82 @@ def get_rules_lookup(world, player: int):
                                                            and state.has("Lead", player),
             "With Our Powers Combined!": lambda state: can_adventure(world, state, player)
                                                        and state.has("Lead", player),
+            "You've Got a Friend in Me": lambda state: state.can_reach_region('Pillager Outpost', player)
+                                                       or (
+                                                           basic_combat(world, state, player)
+                                                           and state.can_reach_region('Woodland Mansion', player)
+                                                       ),
+            "Smells Interesting": lambda state: can_excavate(world, state, player),
+            "Little Sniffs": lambda state: can_excavate(world, state, player),
+            "Planting the Past": lambda state: can_excavate(world, state, player),
+            "Crafting a New Look": lambda state: has_iron_ingots(world, state, player) # Maybe streamline this one
+                                                 and (
+                                                     fortress_loot(world, state, player)
+                                                     or (
+                                                         state.can_reach_region("Pillager Outpost", player)
+                                                         and basic_combat(world, state, player)
+                                                     )
+                                                     or (
+                                                         state.can_reach_region("Bastion Remnant", player)
+                                                         and basic_combat(world, state, player)
+                                                     )
+                                                     or (
+                                                         state.can_reach_region("End City", player)
+                                                         and basic_combat(world, state, player)
+                                                     )
+                                                     or (
+                                                         state.can_reach_region("Ocean Monument", player)
+                                                         and basic_combat(world, state, player)
+                                                         and (
+                                                             (
+                                                                 state.has("Fishing Rod", player)
+                                                                 and can_enchant(world, state, player)
+                                                             )
+                                                             or (
+                                                                 state.has("Bucket", player)
+                                                                 and can_brew_potions(world, state, player)
+                                                             )
+                                                         )
+                                                     )
+                                                     or (
+                                                         state.can_reach_region("Woodland Mansion", player)
+                                                         and basic_combat(world, state, player)
+                                                     )
+                                                     or state.can_reach_region("Ancient City", player)
+                                                     or (
+                                                         state.can_reach_region("Trail Ruins", player)
+                                                         and state.has("Brush", player)
+                                                     )
+                                                 ),
+            "Smithing with Style": lambda state: fortress_loot(world, state, player) # Rib Armor Trim
+                                                 and state.can_reach_region("Bastion Remnant", player) # Snout Armor Trim
+                                                 and state.can_reach_region("End City", player)  # Spire Armor Trim
+                                                 and state.can_reach_region("Ocean Monument", player)  # Tide Armor Trim
+                                                 and (
+                                                     (
+                                                         state.has("Fishing Rod", player) # Water Breathing Potions for Tide Armor Trim
+                                                         and can_brew_potions(world, state, player)
+                                                     )
+                                                     or (
+                                                         state.has("Bucket", player) # Access to Milk/Aqua Affinity and Axolotls/Respiration for Tide Armor Trim
+                                                         and can_enchant(world, state, player)
+                                                     )
+                                                 )
+                                                 and state.can_reach("Woodland Mansion", 'Region', player) # Vex Armor Trim
+                                                 and state.can_reach("Ancient City", 'Region', player)  # Ward and Silence Armor Trims
+                                                 and state.can_reach("Trail Ruins", 'Region', player)
+                                                 and can_excavate(world, state, player),  # Wayfinder Armor Trim
+            "Respecting the Remnants": lambda state: can_excavate(world, state, player)
+                                                     and (
+                                                         state.can_reach_region("Ocean Monument", player)
+                                                         or state.can_reach_region("Trail Ruins", player)
+                                                     ),
+            "Careful Restoration": lambda state: can_excavate(world, state, player)
+                                                 and (
+                                                     state.can_reach_region("Ocean Monument", player)
+                                                     or state.can_reach_region("Trail Ruins", player)
+                                                 ),
+            "The Power of Books": lambda state: state.has("Progressive Tools", player, 2),
         }
     }
     return rules_lookup

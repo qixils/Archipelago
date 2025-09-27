@@ -55,6 +55,7 @@ or after completing both conditions.
     * Soul Campfire
 * Spyglass
 * Lead
+* Brush
 * Progressive Weapons
     * Tier I
         * Stone Sword

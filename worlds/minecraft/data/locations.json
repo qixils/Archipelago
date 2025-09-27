@@ -104,7 +104,7 @@
         "Glow and Behold!",
         "Whatever Floats Your Goat!",
         "Caves & Cliffs",
-        "Feels like home",
+        "Feels Like Home",
         "Sound of Music",
         "Star Trader",
         "Birthday Song",
@@ -113,7 +113,15 @@
         "Sneak 100",
         "When the Squad Hops into Town",
         "With Our Powers Combined!",
-        "You've Got a Friend in Me"
+        "You've Got a Friend in Me",
+        "Smells Interesting",
+        "Little Sniffs",
+        "Planting the Past",
+        "Crafting a New Look",
+        "Smithing with Style",
+        "Respecting the Remnants",
+        "Careful Restoration",
+        "The Power of Books"
     ],
     "locations_by_region": {
         "Overworld": [
@@ -145,13 +153,13 @@
             "Monsters Hunted",
             "Enchanter",
             "Eye Spy",
+            "Postmortal",
             "Monster Hunter",
             "Adventuring Time",
             "A Seedy Place",
             "Husbandry",
             "Bee Our Guest",
             "Diamonds!",
-            "A Throwaway Joke",
             "Minecraft",
             "Sticky Situation",
             "Ol' Betsy",
@@ -170,17 +178,20 @@
             "Wax Off",
             "The Cutest Predator",
             "The Healing Power of Friendship",
-            "Is It a Bird?",
             "Surge Protector",
             "Light as a Rabbit",
             "Glow and Behold!",
             "Whatever Floats Your Goat!",
             "Caves & Cliffs",
             "Sound of Music",
+            "Birthday Song",
             "Bukkit Bukkit",
-            "It Spreads",
-            "Sneak 100",
-            "When the Squad Hops into Town"
+            "When the Squad Hops into Town",
+            "You've Got a Friend in Me",
+            "Crafting a New Look",
+            "Smithing with Style",
+            "Respecting the Remnants",
+            "Careful Restoration"
         ],
         "The Nether": [
             "Hot Tourist Destinations",
@@ -197,8 +208,9 @@
             "Uneasy Alliance",
             "Cover Me in Debris",
             "Is It a Balloon?",
-            "Feels like home",
-            "With Our Powers Combined!"
+            "Feels Like Home",
+            "With Our Powers Combined!",
+            "The Power of Books"
         ],
         "The End": [
             "Free the End",
@@ -211,7 +223,6 @@
             "Is It a Plane?"
         ],
         "Village": [
-            "Postmortal",
             "Hero of the Village",
             "A Balanced Diet",
             "What a Deal!",
@@ -232,9 +243,7 @@
         ],
         "Pillager Outpost": [
             "Who's the Pillager Now?",
-            "Voluntary Exile",
-            "Birthday Song",
-            "You've Got a Friend in Me"
+            "Voluntary Exile"
         ],
         "Bastion Remnant": [
             "War Pigs",
@@ -245,6 +254,19 @@
             "Great View From Up Here",
             "The City at the End of the Game",
             "Sky's the Limit"
+        ],
+        "Ocean Monument": [
+            "A Throwaway Joke",
+            "Smells Interesting",
+            "Little Sniffs",
+            "Planting the Past"
+        ],
+        "Ancient City": [
+            "It Spreads",
+            "Sneak 100"
+        ],
+        "Trail Ruins": [
+            "Is It a Bird?"
         ]
     }
 }   
