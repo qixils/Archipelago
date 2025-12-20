@@ -1,4 +1,5 @@
-from test.bases import TestBase, WorldTestBase
+from test.bases import WorldTestBase
+from worlds.alttp.test.bases import TestBase
 from .. import MinecraftWorld, MinecraftOptions
 
 
