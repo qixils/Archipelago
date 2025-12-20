@@ -7,7 +7,8 @@ from . import MCTestBase
 class TestAdvancements(MCTestBase):
     options = {
         "shuffle_structures": False,
-        "structure_compasses": False
+        "structure_compasses": False,
+        "include_hard_advancements": False,
     }
 
     def test_42000(self):
@@ -318,9 +319,10 @@ class TestAdvancements(MCTestBase):
             ["Two by Two", False, [], ['Progressive Tools']],
             ["Two by Two", False, [], ['Progressive Weapons']],
             ["Two by Two", False, [], ['Bucket']],
+            ["Two by Two", False, [], ['Brush']],
             ["Two by Two", False, ['Progressive Tools', 'Progressive Tools'], ['Bucket', 'Progressive Tools']],
             ["Two by Two", False, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools', 'Progressive Weapons']],
-            ["Two by Two", True, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons']],
+            ["Two by Two", True, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons', 'Brush']],
             ])
 
     def test_42023(self):
@@ -659,10 +661,10 @@ class TestAdvancements(MCTestBase):
             ["Monsters Hunted", False, [], ['Archery']],
             ["Monsters Hunted", False, [], ['Enchanting']],
             ["Monsters Hunted", False, [], ['Lead']],
-            ["Monsters Hunted", True, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools',
-                                       'Progressive Weapons', 'Progressive Weapons', 'Progressive Weapons', 'Archery',
-                                       'Progressive Armor', 'Progressive Armor', 'Enchanting', 'Shield',
-                                       'Lead', 'Brewing', 'Bottles', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls']],
+            ["Monsters Hunted", True, ['Progressive Resource Crafting', 'Progressive Weapons', 'Progressive Weapons', 'Progressive Tools',
+                                       'Flint and Steel', 'Bucket', 'Progressive Tools', 'Progressive Tools', 'Progressive Weapons',
+                                       'Progressive Armor', 'Progressive Armor', 'Brewing', 'Bottles', 'Enchanting',
+                                       'Shield', 'Archery', 'Lead', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls']],
             ])
 
     def test_42049(self):
@@ -908,18 +910,8 @@ class TestAdvancements(MCTestBase):
         self.run_location_tests([
             ["Country Lode, Take Me Home", False, []],
             ["Country Lode, Take Me Home", False, [], ['Progressive Resource Crafting']],
-            ["Country Lode, Take Me Home", False, [], ['Flint and Steel']],
-            ["Country Lode, Take Me Home", False, ['Progressive Tools', 'Progressive Tools'], ['Progressive Tools']],
-            ["Country Lode, Take Me Home", False, [], ['Progressive Weapons']],
-            ["Country Lode, Take Me Home", False, [], ['Progressive Armor', 'Shield']],
-            ["Country Lode, Take Me Home", False, [], ['Brewing']],
-            ["Country Lode, Take Me Home", False, [], ['Bottles']],
-            ["Country Lode, Take Me Home", False, [], ['Bed']],
-            ["Country Lode, Take Me Home", False, [], ['8 Netherite Scrap']],
-            ["Country Lode, Take Me Home", True, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools',
-                                                  'Progressive Weapons', 'Progressive Armor', 'Brewing', 'Bottles', 'Bed', '8 Netherite Scrap']],
-            ["Country Lode, Take Me Home", True, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools',
-                                                  'Progressive Weapons', 'Shield', 'Brewing', 'Bottles', 'Bed', '8 Netherite Scrap']],
+            ["Country Lode, Take Me Home", False, [], ['Progressive Tools', 'Progressive Tools']],
+            ["Country Lode, Take Me Home", True, ['Progressive Tools', 'Progressive Tools', 'Progressive Resource Crafting']],
             ])
 
     def test_42067(self):
@@ -976,9 +968,7 @@ class TestAdvancements(MCTestBase):
         self.run_location_tests([
             ["A Throwaway Joke", False, []],
             ["A Throwaway Joke", False, [], ['Progressive Weapons']],
-            ["A Throwaway Joke", False, [], ['Campfire', 'Progressive Resource Crafting']],
-            ["A Throwaway Joke", True, ['Progressive Weapons', 'Campfire']],
-            ["A Throwaway Joke", True, ['Progressive Weapons', 'Progressive Resource Crafting']],
+            ["A Throwaway Joke", True, ['Progressive Weapons', 'Progressive Armor', 'Progressive Tools', 'Progressive Resource Crafting']],
             ])
 
     def test_42073(self):
