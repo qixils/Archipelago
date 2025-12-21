@@ -1151,15 +1151,7 @@ class TestAdvancements(MCTestBase):
             ["Wax On", False, [], ["Progressive Tools"]],
             ["Wax On", False, [], ["Progressive Resource Crafting"]],
             ["Wax On", False, [], ["Campfire"]],
-            ["Wax On", False, ["Progressive Resource Crafting"], ["Progressive Resource Crafting",
-                                                                  "Progressive Weapons"]],
-            ["Wax On", False, ["Progressive Resource Crafting", "Progressive Tools"], ["Progressive Resource Crafting",
-                                                                                       "Progressive Tools",
-                                                                                       "Progressive Tools"]],
-            ["Wax On", True, ["Campfire", "Progressive Tools",
-                              "Progressive Resource Crafting", "Progressive Resource Crafting"]],
-            ["Wax On", True, ["Campfire", "Progressive Resource Crafting",
-                              "Progressive Tools", "Progressive Tools", "Progressive Weapons"]],
+            ["Wax On", True, ["Progressive Resource Crafting", "Progressive Tools", "Campfire"]],
             ])
 
     def test_42093(self):
@@ -1169,15 +1161,9 @@ class TestAdvancements(MCTestBase):
             ["Wax Off", False, [], ["Progressive Resource Crafting"]],
             ["Wax Off", False, [], ["Campfire", "Progressive Weapons"]],
             ["Wax Off", False, ["Progressive Tools"], ["Campfire", "Progressive Tools", "Progressive Tools"]],
-            ["Wax Off", False, ["Progressive Resource Crafting"], ["Progressive Resource Crafting",
-                                                                   "Progressive Weapons"]],
-            ["Wax Off", False, ["Progressive Resource Crafting", "Progressive Tools"], ["Progressive Resource Crafting",
-                                                                                        "Progressive Tools",
-                                                                                        "Progressive Tools"]],
-            ["Wax Off", True, ["Progressive Tools",
-                               "Progressive Resource Crafting", "Progressive Resource Crafting", "Campfire"]],
-            ["Wax Off", True, ["Progressive Resource Crafting",
-                               "Progressive Tools", "Progressive Tools", "Progressive Weapons"]]
+            ["Wax Off", True, ["Progressive Resource Crafting", "Progressive Tools", "Campfire"]],
+            ["Wax Off", True, ["Progressive Resource Crafting", "Progressive Tools", "Progressive Tools",
+                               "Progressive Weapons"]]
             ])
 
     def test_42094(self):

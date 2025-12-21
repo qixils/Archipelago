@@ -457,18 +457,10 @@ def get_rules_lookup(world, player: int):
                                          and state.has('Progressive Tools', player, 2)
                                          and basic_combat(world, state, player),
             "Wax On": lambda state: state.has('Campfire', player)
-                                    and has_iron_ingots(world, state, player)
-                                    and (
-                                         state.has('Progressive Resource Crafting', player, 2)
-                                         or (
-                                          can_adventure(world, state, player)
-                                          and has_explorer_maps(world, state, player)
-                                        )
-                                    ),
+                                    and has_copper_ingots(world, state, player),
             "Wax Off": lambda state: (
                                       has_copper_ingots(world, state, player)
                                       and state.has('Campfire', player)
-                                      and state.has('Progressive Resource Crafting', player, 2)
                                      )
                                      or (
                                       can_adventure(world, state, player)
