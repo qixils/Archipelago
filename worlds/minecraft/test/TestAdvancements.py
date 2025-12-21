@@ -210,15 +210,11 @@ class TestAdvancements(MCTestBase):
             ["This Boat Has Legs", False, [], ['Progressive Resource Crafting']],
             ["This Boat Has Legs", False, [], ['Flint and Steel']],
             ["This Boat Has Legs", False, [], ['Progressive Tools']],
-            ["This Boat Has Legs", False, [], ['Progressive Weapons']],
-            ["This Boat Has Legs", False, [], ['Progressive Armor', 'Shield']],
             ["This Boat Has Legs", False, [], ['Fishing Rod']],
             ["This Boat Has Legs", False, [], ['Saddle']],
             ["This Boat Has Legs", False, ['Progressive Tools', 'Progressive Tools'], ['Bucket', 'Progressive Tools']],
-            ["This Boat Has Legs", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Progressive Weapons', 'Progressive Armor', 'Flint and Steel', 'Bucket', 'Fishing Rod']],
-            ["This Boat Has Legs", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Progressive Weapons', 'Progressive Armor', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools', 'Fishing Rod']],
-            ["This Boat Has Legs", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Progressive Weapons', 'Shield', 'Flint and Steel', 'Bucket', 'Fishing Rod']],
-            ["This Boat Has Legs", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Progressive Weapons', 'Shield', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools', 'Fishing Rod']],
+            ["This Boat Has Legs", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Fishing Rod']],
+            ["This Boat Has Legs", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools', 'Fishing Rod']],
             ])
 
     def test_42016(self):
@@ -1103,17 +1099,9 @@ class TestAdvancements(MCTestBase):
             ["When Pigs Fly", False, []],
             ["When Pigs Fly", False, [], ['Progressive Resource Crafting']],
             ["When Pigs Fly", False, [], ['Progressive Tools']],
-            ["When Pigs Fly", False, [], ['Progressive Weapons']],
-            ["When Pigs Fly", False, [], ['Progressive Armor', 'Shield']],
             ["When Pigs Fly", False, [], ['Fishing Rod']],
             ["When Pigs Fly", False, [], ['Saddle']],
-            ["When Pigs Fly", False, ['Progressive Weapons'], ['Flint and Steel', 'Progressive Weapons', 'Progressive Weapons']],
-            ["When Pigs Fly", False, ['Progressive Tools', 'Progressive Tools', 'Progressive Weapons'], ['Bucket', 'Progressive Tools', 'Progressive Weapons', 'Progressive Weapons']],
-            ["When Pigs Fly", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons', 'Progressive Armor', 'Fishing Rod']],
-            ["When Pigs Fly", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools', 'Progressive Weapons', 'Progressive Armor', 'Fishing Rod']],
-            ["When Pigs Fly", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons', 'Shield', 'Fishing Rod']],
-            ["When Pigs Fly", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools', 'Progressive Weapons', 'Shield', 'Fishing Rod']],
-            ["When Pigs Fly", True, ['Saddle', 'Progressive Weapons', 'Progressive Weapons', 'Progressive Armor', 'Shield', 'Progressive Resource Crafting', 'Progressive Tools', 'Fishing Rod']],
+            ["When Pigs Fly", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Fishing Rod']],
             ])
 
     def test_42089(self):
@@ -1311,20 +1299,17 @@ class TestAdvancements(MCTestBase):
             ["Caves & Cliffs", True, ["Progressive Resource Crafting", "Progressive Tools", "Progressive Tools", "Bucket"]],
             ])
 
-    # bucket, fishing rod, saddle, combat
+    # bucket, fishing rod, saddle
     def test_42104(self):
         self.run_location_tests([
             ["Feels Like Home", False, []],
             ["Feels Like Home", False, [], ['Progressive Resource Crafting']],
             ["Feels Like Home", False, [], ['Progressive Tools']],
-            ["Feels Like Home", False, [], ['Progressive Weapons']],
-            ["Feels Like Home", False, [], ['Progressive Armor', 'Shield']],
             ["Feels Like Home", False, [], ['Fishing Rod']],
             ["Feels Like Home", False, [], ['Saddle']],
             ["Feels Like Home", False, [], ['Bucket']],
             ["Feels Like Home", False, [], ['Flint and Steel']],
-            ["Feels Like Home", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons', 'Progressive Armor', 'Fishing Rod']],
-            ["Feels Like Home", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons', 'Shield', 'Fishing Rod']],
+            ["Feels Like Home", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Fishing Rod']],
             ])
 
     # iron pick, combat

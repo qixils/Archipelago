@@ -58,7 +58,7 @@ def can_use_anvil(world: "MinecraftWorld", state: CollectionState, player: int) 
            )
 
 
-def fortress_loot(world: "MinecraftWorld", state: CollectionState, player: int) -> bool:  # saddles, blaze rods, wither skulls
+def fortress_loot(world: "MinecraftWorld", state: CollectionState, player: int) -> bool:  # blaze rods, wither skulls
     return state.can_reach_region('Nether Fortress', player) and basic_combat(world, state, player)
 
 
@@ -318,10 +318,7 @@ def get_rules_lookup(world, player: int):
             "The Next Generation": lambda state: can_respawn_ender_dragon(world, state, player)
                                                  and can_kill_ender_dragon(world, state, player),
             "Fishy Business": lambda state: state.has("Fishing Rod", player),
-            "This Boat Has Legs": lambda state: (
-                                                    fortress_loot(world, state, player)
-                                                    or complete_raid(world, state, player)
-                                                 )
+            "This Boat Has Legs": lambda state: has_iron_ingots(world, state, player)
                                                 and state.has("Saddle", player)
                                                 and state.has("Fishing Rod", player),
             "Sniper Duel": lambda state: state.has("Archery", player),
@@ -440,10 +437,7 @@ def get_rules_lookup(world, player: int):
                                      and state.has("Bucket", player),
             "On a Rail": lambda state: has_iron_ingots(world, state, player)
                                        and state.has('Progressive Tools', player, 2),
-            "When Pigs Fly": lambda state:  (
-                                                fortress_loot(world, state, player)
-                                                or complete_raid(world, state, player)
-                                            )
+            "When Pigs Fly": lambda state:  has_iron_ingots(world, state, player)
                                             and state.has("Saddle", player)
                                             and state.has("Fishing Rod", player)
                                             and can_adventure(world, state, player),
@@ -505,10 +499,6 @@ def get_rules_lookup(world, player: int):
             "Feels Like Home": lambda state: has_iron_ingots(world, state, player)
                                              and state.has('Bucket', player)
                                              and state.has('Fishing Rod', player)
-                                             and (
-                                               fortress_loot(world, state, player)
-                                               or complete_raid(world, state, player)
-                                             )
                                              and state.has("Saddle", player),
             "Sound of Music": lambda state: state.has("Progressive Tools", player, 2)
                                             and has_iron_ingots(world, state, player)
