@@ -772,7 +772,7 @@ class TestAdvancements(MCTestBase):
             ["Adventuring Time", False, []],
             ["Adventuring Time", False, [], ['Progressive Weapons']],
             ["Adventuring Time", False, [], ['Progressive Resource Crafting']],
-            ["Adventuring Time", False, [], ['Progressive Tools', 'Progressive Tools']],
+            ["Adventuring Time", False, ['Progressive Tools'], ['Progressive Tools', 'Progressive Tools']],
             ["Adventuring Time", True, ['Progressive Weapons', 'Progressive Resource Crafting',
                                         'Progressive Tools', 'Progressive Tools']],
             ])
@@ -1161,18 +1161,35 @@ class TestAdvancements(MCTestBase):
         self.run_location_tests([
             ["Wax On", False, []],
             ["Wax On", False, [], ["Progressive Tools"]],
+            ["Wax On", False, [], ["Progressive Resource Crafting"]],
             ["Wax On", False, [], ["Campfire"]],
-            ["Wax On", False, ["Progressive Resource Crafting"], ["Progressive Resource Crafting"]],
-            ["Wax On", True, ["Progressive Tools", "Progressive Resource Crafting", "Progressive Resource Crafting", "Campfire"]],
+            ["Wax On", False, ["Progressive Resource Crafting"], ["Progressive Resource Crafting",
+                                                                  "Progressive Weapons"]],
+            ["Wax On", False, ["Progressive Resource Crafting", "Progressive Tools"], ["Progressive Resource Crafting",
+                                                                                       "Progressive Tools",
+                                                                                       "Progressive Tools"]],
+            ["Wax On", True, ["Campfire", "Progressive Tools",
+                              "Progressive Resource Crafting", "Progressive Resource Crafting"]],
+            ["Wax On", True, ["Campfire", "Progressive Resource Crafting",
+                              "Progressive Tools", "Progressive Tools", "Progressive Weapons"]],
             ])
 
     def test_42093(self):
         self.run_location_tests([
             ["Wax Off", False, []],
             ["Wax Off", False, [], ["Progressive Tools"]],
-            ["Wax Off", False, [], ["Campfire"]],
-            ["Wax Off", False, ["Progressive Resource Crafting"], ["Progressive Resource Crafting"]],
-            ["Wax Off", True, ["Progressive Tools", "Progressive Resource Crafting", "Progressive Resource Crafting", "Campfire"]],
+            ["Wax Off", False, [], ["Progressive Resource Crafting"]],
+            ["Wax Off", False, [], ["Campfire", "Progressive Weapons"]],
+            ["Wax Off", False, ["Progressive Tools"], ["Campfire", "Progressive Tools", "Progressive Tools"]],
+            ["Wax Off", False, ["Progressive Resource Crafting"], ["Progressive Resource Crafting",
+                                                                   "Progressive Weapons"]],
+            ["Wax Off", False, ["Progressive Resource Crafting", "Progressive Tools"], ["Progressive Resource Crafting",
+                                                                                        "Progressive Tools",
+                                                                                        "Progressive Tools"]],
+            ["Wax Off", True, ["Progressive Tools",
+                               "Progressive Resource Crafting", "Progressive Resource Crafting", "Campfire"]],
+            ["Wax Off", True, ["Progressive Resource Crafting",
+                               "Progressive Tools", "Progressive Tools", "Progressive Weapons"]]
             ])
 
     def test_42094(self):
@@ -1408,4 +1425,307 @@ class TestAdvancements(MCTestBase):
             ["You've Got a Friend in Me", False, [], ["Campfire", "Progressive Resource Crafting"]],
             ["You've Got a Friend in Me", True, ["Progressive Weapons", "Campfire"]],
             ["You've Got a Friend in Me", True, ["Progressive Weapons", "Progressive Resource Crafting"]],
+            ])
+
+    # ocean ruins, brush
+    def test_42114(self):
+        self.run_location_tests([
+            ["Smells Interesting", False, []],
+            ["Smells Interesting", False, [], ["Brush"]],
+            ["Smells Interesting", False, [], ["Progressive Weapons"]],
+            ["Smells Interesting", False, [], ["Progressive Resource Crafting"]],
+            ["Smells Interesting", False, [], ["Progressive Tools"]],
+            ["Smells Interesting", True, ["Brush", "Progressive Weapons",
+                                          "Progressive Resource Crafting", "Progressive Tools"]],
+            ])
+
+    # ocean ruins, brush
+    def test_42115(self):
+        self.run_location_tests([
+            ["Little Sniffs", False, []],
+            ["Little Sniffs", False, [], ["Brush"]],
+            ["Little Sniffs", False, [], ["Progressive Weapons"]],
+            ["Little Sniffs", False, [], ["Progressive Resource Crafting"]],
+            ["Little Sniffs", False, [], ["Progressive Tools"]],
+            ["Little Sniffs", True, ["Brush", "Progressive Weapons",
+                                     "Progressive Resource Crafting", "Progressive Tools"]],
+            ])
+
+    # ocean ruins, brush
+    def test_42116(self):
+        self.run_location_tests([
+            ["Planting the Past", False, []],
+            ["Planting the Past", False, [], ["Brush"]],
+            ["Planting the Past", False, [], ["Progressive Weapons"]],
+            ["Planting the Past", False, [], ["Progressive Resource Crafting"]],
+            ["Planting the Past", False, [], ["Progressive Tools"]],
+            ["Planting the Past", True, ["Brush", "Progressive Weapons",
+                                         "Progressive Resource Crafting", "Progressive Tools"]],
+            ])
+
+    def test_42117(self):
+        self.run_location_tests([
+            ["Crafting a New Look", False, []],
+            ["Crafting a New Look", False, [], ["Progressive Tools"]],
+            ["Crafting a New Look", False, [], ["Progressive Resource Crafting"]],
+            ["Crafting a New Look", False, [], ["Progressive Weapons"]],
+            ["Crafting a New Look", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools",
+                                                                   "Progressive Armor", "Shield", "Brush"]],
+            ["Crafting a New Look", True, ["Progressive Resource Crafting", "Progressive Weapons",
+                                           "Progressive Tools", "Progressive Armor"], []],
+            ["Crafting a New Look", True, ["Progressive Resource Crafting", "Progressive Weapons",
+                                           "Progressive Tools", "Shield"], []],
+            ["Crafting a New Look", True, ["Progressive Resource Crafting", "Progressive Weapons",
+                                           "Progressive Tools", "Progressive Tools"], []],
+            ["Crafting a New Look", True, ["Progressive Resource Crafting", "Progressive Weapons",
+                                           "Progressive Tools", "Brush"], []],
+            ])
+
+    def test_42118(self):
+        self.run_location_tests([
+            ["Smithing with Style", False, []],
+            ["Smithing with Style", False, [], ["Progressive Resource Crafting"]],
+            ["Smithing with Style", False, [], ["Brush"]],
+            ["Smithing with Style", False, [], ["Progressive Weapons"]],
+            ["Smithing with Style", False, ["3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls"], ["3 Ender Pearls"]],
+            ["Smithing with Style", False, [], ["Brewing"]],
+            ["Smithing with Style", False, [], ["Flint and Steel"]],
+            ["Smithing with Style", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Smithing with Style", False, [], ["Progressive Armor", "Shield"]],
+            ["Smithing with Style", False, ["Progressive Tools", "Progressive Tools"], ["Bucket", "Progressive Tools"]],
+            ["Smithing with Style", False, ["Progressive Tools", "Progressive Tools"], ["Progressive Tools",
+                                                                                        "Fishing Rod"]],
+            ["Smithing with Style", False, ["Progressive Tools", "Progressive Tools"], ["Progressive Tools", "Bucket"]],
+            ["Smithing with Style", False, [], ["Bucket", "Fishing Rod"]],
+            ["Smithing with Style", False, [], ["Bucket", "Bottles"]],
+            ["Smithing with Style", False, [], ["Fishing Rod", "Enchanting"]],
+            ["Smithing with Style", False, [], ["Bottles", "Enchanting"]],
+            ["Smithing with Style", True, ["Progressive Tools", "Progressive Tools",
+                                           "Progressive Resource Crafting", "Brush", "Progressive Weapons", "Brewing",
+                                           "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls",
+                                           "Flint and Steel", "Progressive Armor", "Bucket", "Bottles", "Fishing Rod"]],
+            ["Smithing with Style", True, ["Progressive Tools", "Progressive Tools",
+                                           "Progressive Resource Crafting", "Brush", "Progressive Weapons", "Brewing",
+                                           "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls",
+                                           "Flint and Steel", "Shield", "Bucket", "Bottles", "Fishing Rod"]],
+            ["Smithing with Style", True, ["Progressive Tools", "Progressive Tools",
+                                           "Progressive Resource Crafting", "Brush", "Progressive Weapons", "Brewing",
+                                           "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls",
+                                           "Flint and Steel", "Progressive Armor", "Progressive Tools",
+                                           "Bottles", "Fishing Rod"]],
+            ["Smithing with Style", True, ["Progressive Tools", "Progressive Tools", "Progressive Tools",
+                                           "Progressive Resource Crafting", "Brush", "Progressive Weapons", "Brewing",
+                                           "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls",
+                                           "Flint and Steel", "Shield", "Bottles", "Fishing Rod"]],
+            ["Smithing with Style", True, ["Progressive Tools", "Progressive Tools", "Progressive Tools",
+                                           "Progressive Resource Crafting", "Brush", "Progressive Weapons", "Brewing",
+                                           "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls",
+                                           "Flint and Steel", "Progressive Armor", "Bucket", "Enchanting"]],
+            ["Smithing with Style", True, ["Progressive Tools", "Progressive Tools", "Progressive Tools",
+                                           "Progressive Resource Crafting", "Brush", "Progressive Weapons", "Brewing",
+                                           "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls", "3 Ender Pearls",
+                                           "Flint and Steel", "Shield", "Bucket", "Enchanting"]],
+            ])
+
+    def test_42119(self):
+        self.run_location_tests([
+            ["Respecting the Remnants", False, []],
+            ["Respecting the Remnants", False, [], ["Progressive Tools"]],
+            ["Respecting the Remnants", False, [], ["Progressive Resource Crafting"]],
+            ["Respecting the Remnants", False, [], ["Brush"]],
+            ["Respecting the Remnants", False, [], ["Progressive Weapons"]],
+            ["Respecting the Remnants", True, ["Progressive Tools", "Progressive Resource Crafting",
+                                               "Brush", "Progressive Weapons"]],
+            ])
+
+    def test_42120(self):
+        self.run_location_tests([
+            ["Careful Restoration", False, []],
+            ["Careful Restoration", False, [], ["Progressive Tools"]],
+            ["Careful Restoration", False, [], ["Progressive Resource Crafting"]],
+            ["Careful Restoration", False, [], ["Brush"]],
+            ["Careful Restoration", False, [], ["Progressive Weapons"]],
+            ["Careful Restoration", True, ["Progressive Tools", "Progressive Resource Crafting",
+                                           "Brush", "Progressive Weapons"]],
+            ])
+
+    def test_42121(self):
+        self.run_location_tests([
+            ["The Power of Books", False, []],
+            ["The Power of Books", False, [], ["Progressive Resource Crafting"]],
+            ["The Power of Books", False, [], ["Flint and Steel"]],
+            ["The Power of Books", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["The Power of Books", False, ["Progressive Tools", "Progressive Tools"], ["Progressive Tools", "Bucket"]],
+            ["The Power of Books", True, ["Progressive Resource Crafting", "Flint and Steel",
+                                          "Progressive Tools", "Progressive Tools", "Progressive Tools"]],
+            ["The Power of Books", True, ["Progressive Resource Crafting", "Flint and Steel",
+                                          "Progressive Tools", "Progressive Tools", "Bucket"]],
+            ])
+
+    def test_42122(self):
+        self.run_location_tests([
+            ["Isn't It Scute?", False, []],
+            ["Isn't It Scute?", False, [], ["Progressive Weapons"]],
+            ["Isn't It Scute?", False, [], ["Progressive Resource Crafting"]],
+            ["Isn't It Scute?", False, [], ["Progressive Tools"]],
+            ["Isn't It Scute?", False, [], ["Brush"]],
+            ["Isn't It Scute?", True, ["Progressive Weapons", "Progressive Resource Crafting",
+                                       "Progressive Tools", "Brush"]],
+            ])
+
+    def test_42123(self):
+        self.run_location_tests([
+            ["Shear Brilliance", False, []],
+            ["Shear Brilliance", False, [], ["Progressive Weapons"]],
+            ["Shear Brilliance", False, [], ["Progressive Resource Crafting"]],
+            ["Shear Brilliance", False, [], ["Progressive Tools"]],
+            ["Shear Brilliance", False, [], ["Brush"]],
+            ["Shear Brilliance", True, ["Progressive Weapons", "Progressive Resource Crafting",
+                                        "Progressive Tools", "Brush"]],
+            ])
+
+    def test_42124(self):
+        self.run_location_tests([
+            ["Good as New", False, []],
+            ["Good as New", False, [], ["Progressive Weapons"]],
+            ["Good as New", False, [], ["Progressive Resource Crafting"]],
+            ["Good as New", False, [], ["Progressive Tools"]],
+            ["Good as New", False, [], ["Brush"]],
+            ["Good as New", True, ["Progressive Weapons", "Progressive Resource Crafting",
+                                   "Progressive Tools", "Brush"]],
+            ])
+
+    def test_42125(self):
+        self.run_location_tests([
+            ["The Whole Pack", False, []],
+            ["The Whole Pack", False, [], ["Progressive Weapons"]],
+            ["The Whole Pack", False, [], ["Progressive Resource Crafting", "Campfire"]],
+            ["The Whole Pack", True, ["Progressive Weapons", "Progressive Resource Crafting"]],
+            ["The Whole Pack", True, ["Progressive Weapons", "Campfire"]],
+            ])
+
+    def test_42126(self):
+        self.run_location_tests([
+            ["Minecraft: Trial(s) Edition", False, []],
+            ["Minecraft: Trial(s) Edition", False, [], ["Progressive Weapons"]],
+            ["Minecraft: Trial(s) Edition", False, [], ["Progressive Resource Crafting"]],
+            ["Minecraft: Trial(s) Edition", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Minecraft: Trial(s) Edition", True, ["Progressive Tools", "Progressive Tools",
+                                                   "Progressive Weapons", "Progressive Resource Crafting"]],
+            ])
+
+    def test_42127(self):
+        self.run_location_tests([
+            ["Under Lock and Key", False, []],
+            ["Under Lock and Key", False, [], ["Progressive Weapons"]],
+            ["Under Lock and Key", False, [], ["Progressive Resource Crafting"]],
+            ["Under Lock and Key", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Under Lock and Key", False, [], ["Progressive Armor", "Shield"]],
+            ["Under Lock and Key", True, ["Progressive Weapons", "Progressive Tools", "Progressive Tools",
+                                          "Progressive Resource Crafting", "Progressive Armor"]],
+            ["Under Lock and Key", True, ["Progressive Weapons", "Progressive Tools", "Progressive Tools",
+                                          "Progressive Resource Crafting", "Shield"]],
+            ])
+
+    def test_42128(self):
+        self.run_location_tests([
+            ["Blowback", False, []],
+            ["Blowback", False, [], ["Progressive Weapons"]],
+            ["Blowback", False, [], ["Progressive Resource Crafting"]],
+            ["Blowback", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Blowback", False, [], ["Progressive Armor", "Shield"]],
+            ["Blowback", True, ["Progressive Weapons", "Progressive Tools", "Progressive Tools",
+                                "Progressive Resource Crafting", "Progressive Armor"]],
+            ["Blowback", True, ["Progressive Weapons", "Progressive Tools", "Progressive Tools",
+                                "Progressive Resource Crafting", "Shield"]],
+            ])
+
+    def test_42129(self):
+        self.run_location_tests([
+            ["Who Needs Rockets?", False, []],
+            ["Who Needs Rockets?", False, [], ["Progressive Weapons"]],
+            ["Who Needs Rockets?", False, [], ["Progressive Resource Crafting"]],
+            ["Who Needs Rockets?", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Who Needs Rockets?", False, [], ["Progressive Armor", "Shield"]],
+            ["Who Needs Rockets?", True, ["Progressive Weapons", "Progressive Tools", "Progressive Tools",
+                                          "Progressive Resource Crafting", "Progressive Armor"]],
+            ["Who Needs Rockets?", True, ["Progressive Weapons", "Progressive Tools", "Progressive Tools",
+                                          "Progressive Resource Crafting", "Shield"]],
+            ])
+
+    def test_42130(self):
+        self.run_location_tests([
+            ["Crafters Crafting Crafters", False, []],
+            ["Crafters Crafting Crafters", False, [], ["Progressive Resource Crafting"]],
+            ["Crafters Crafting Crafters", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Crafters Crafting Crafters", True, ["Progressive Tools", "Progressive Tools",
+                                                  "Progressive Resource Crafting"]],
+            ])
+
+    def test_42131(self):
+        self.run_location_tests([
+            ["Lighten Up", False, []],
+            ["Lighten Up", False, [], ["Progressive Weapons"]],
+            ["Lighten Up", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Lighten Up", False, [], ["Progressive Resource Crafting"]],
+            ["Lighten Up", True, ["Progressive Tools", "Progressive Tools",
+                                  "Progressive Weapons", "Progressive Resource Crafting"]],
+            ])
+
+    def test_42132(self):
+        self.run_location_tests([
+            ["Over-Overkill", False, []],
+            ["Over-Overkill", False, [], ["Progressive Resource Crafting"]],
+            ["Over-Overkill", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Over-Overkill", False, ["Progressive Weapons"], ["Progressive Weapons", "Progressive Weapons"]],
+            ["Over-Overkill", False, [], ["Progressive Armor"]],
+            ["Over-Overkill", False, [], ["Shield"]],
+            ["Over-Overkill", True, ["Progressive Resource Crafting", "Progressive Tools", "Progressive Tools",
+                                     "Progressive Weapons", "Progressive Weapons", "Progressive Armor", "Shield"]],
+            ])
+
+    def test_42133(self):
+        self.run_location_tests([
+            ["Revaulting", False, []],
+            ["Revaulting", False, [], ["Progressive Resource Crafting"]],
+            ["Revaulting", False, ["Progressive Tools"], ["Progressive Tools", "Progressive Tools"]],
+            ["Revaulting", False, ["Progressive Weapons"], ["Progressive Weapons", "Progressive Weapons"]],
+            ["Revaulting", False, [], ["Progressive Armor"]],
+            ["Revaulting", False, [], ["Shield"]],
+            ["Revaulting", True, ["Progressive Resource Crafting", "Progressive Tools", "Progressive Tools",
+                                  "Progressive Weapons", "Progressive Weapons", "Progressive Armor", "Shield"]],
+            ])
+
+    def test_42134(self):
+        self.run_location_tests([
+            ["Stay Hydrated!", False, []],
+            ["Stay Hydrated!", False, [], ["Progressive Resource Crafting"]],
+            ["Stay Hydrated!", False, [], ["Progressive Tools"]],
+            ["Stay Hydrated!", False, [], ["Flint and Steel"]],
+            ["Stay Hydrated!", False, ["Progressive Tools", "Progressive Tools"], ["Progressive Tools", "Bucket"]],
+            ["Stay Hydrated!", True, ["Progressive Resource Crafting", "Flint and Steel",
+                                      "Progressive Tools", "Progressive Tools", "Progressive Tools"]],
+            ["Stay Hydrated!", True, ["Progressive Resource Crafting", "Flint and Steel",
+                                      "Progressive Tools", "Bucket"]],
+            ])
+
+    def test_42135(self):
+        self.run_location_tests([
+            ["Heart Transplanter", False, []],
+            ["Heart Transplanter", False, [], ["Progressive Weapons"]],
+            ["Heart Transplanter", False, [], ["Progressive Tools"]],
+            ["Heart Transplanter", False, ["Progressive Resource Crafting"], ["Progressive Resource Crafting"]],
+            ["Heart Transplanter", False, [], ["Progressive Armor", "Shield", "Silk Touch Book"]],
+            ["Heart Transplanter", False, [], ["Progressive Armor", "Shield", "Enchanting"]],
+            ["Heart Transplanter", False, ["Progressive Tools", "Progressive Tools"], ["Progressive Tools",
+                                                                                       "Progressive Armor", "Shield"]],
+            ["Heart Transplanter", True, ["Progressive Resource Crafting", "Progressive Resource Crafting",
+                                          "Progressive Weapons", "Progressive Armor",
+                                          "Progressive Tools"]],
+            ["Heart Transplanter", True, ["Progressive Resource Crafting", "Progressive Resource Crafting",
+                                          "Progressive Weapons", "Shield",
+                                          "Progressive Tools"]],
+            ["Heart Transplanter", True, ["Progressive Resource Crafting", "Progressive Resource Crafting",
+                                          "Progressive Weapons", "Enchanting", "Silk Touch Book",
+                                          "Progressive Tools", "Progressive Tools", "Progressive Tools"]],
             ])
