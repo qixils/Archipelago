@@ -11,7 +11,7 @@ import sys
 import threading
 import time
 import zipfile
-from base64 import b64encode
+from base64 import b64encode, b64decode
 from collections import defaultdict
 
 
@@ -74,17 +74,13 @@ class VersionsJson(TypedDict):
     url: str
 
 def load_text(*path: str):
-    if __name__ == '__main__':
-        return pkgutil.get_data('worlds.minecraft', "/".join(path)).decode()
-    else:
-        return pkgutil.get_data(__name__, "/".join(path)).decode()
+    data_path = 'worlds.minecraft' if __name__ == '__main__' else __name__
+    return pkgutil.get_data(data_path, "/".join(path)).decode()
 
 
 def load_image(*path: str):
-    if __name__ == '__main__':
-        data = io.BytesIO(pkgutil.get_data('worlds.minecraft', "/".join(path)))
-    else:
-        data = io.BytesIO(pkgutil.get_data(__name__, "/".join(path)))
+    data_path = 'worlds.minecraft' if __name__ == '__main__' else __name__
+    data = io.BytesIO(pkgutil.get_data(data_path, "/".join(path)))
     texture = CoreImage(data, ext="png")
     return texture
 
@@ -276,7 +272,6 @@ class MinecraftClient(MDApp):
                     data = f.read()
                     data = data.decode('utf-8')
                     if data.startswith("e"):
-                        from base64 import b64decode
                         apmc = json.loads(b64decode(data))
                     elif data.startswith("{"):
                         apmc = json.loads(data)
@@ -284,7 +279,6 @@ class MinecraftClient(MDApp):
             with open(self.apmc_path, 'r') as f:
                 data = f.read()
                 if data.startswith("e"):
-                    from base64 import b64decode
                     apmc = json.loads(b64decode(data))
                 elif data.startswith("{"):
                     apmc = json.loads(data)
@@ -320,7 +314,7 @@ class MinecraftClient(MDApp):
         StepsStep(
             "Download Dependencies",
             DownloadJava(options.server_directory, self.version['java']),
-            DownloadNeoForge(options.server_directory, confirm_prompt, self.version["minecraft"]), # TODO: is there a standalone JAR like fabric now? check history
+            DownloadNeoForge(options.server_directory, confirm_prompt, self.version["minecraft"]),
             SyncStep(lambda context, data: (None, os.path.join(data.mods_dir, "Archipelago.jar"), self.version['version'])),
             DownloadStep(self.version["url"]),
             SyncStep(self.copy_apmc),
