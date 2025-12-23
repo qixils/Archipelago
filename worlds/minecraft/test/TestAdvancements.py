@@ -1099,9 +1099,11 @@ class TestAdvancements(MCTestBase):
             ["When Pigs Fly", False, []],
             ["When Pigs Fly", False, [], ['Progressive Resource Crafting']],
             ["When Pigs Fly", False, [], ['Progressive Tools']],
+            ["When Pigs Fly", False, [], ['Progressive Weapons']],
             ["When Pigs Fly", False, [], ['Fishing Rod']],
             ["When Pigs Fly", False, [], ['Saddle']],
-            ["When Pigs Fly", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools', 'Fishing Rod']],
+            ["When Pigs Fly", True, ['Saddle', 'Progressive Resource Crafting', 'Progressive Tools',
+                                     'Fishing Rod', 'Progressive Weapons']],
             ])
 
     def test_42089(self):
