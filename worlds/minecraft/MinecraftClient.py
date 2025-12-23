@@ -4,26 +4,37 @@ import json
 import logging
 import os
 import pkgutil
-import platform
 import re
 import shutil
 import subprocess
 import sys
 import threading
 import time
+import zipfile
+from base64 import b64encode, b64decode
+from collections import defaultdict
+
+
+if __name__ == '__main__':
+    # makes this module runnable from its world folder.
+    sys.path.remove(os.path.dirname(__file__))
+    new_home = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+    os.chdir(new_home)
+    sys.path.append(new_home)
 
 from enum import Enum
 from math import floor, log
 from queue import Queue
-from typing import List, Optional
-from urllib.parse import urlparse
+from tkinter import filedialog
+from typing import List, Optional, TYPE_CHECKING, Any, TypedDict
 
+# this import is needed because of an AP assert
+import kvui
 from kivy import Config
 from kivy.core.window import Window
 from kivy.core.image import Image as CoreImage
 from kivy.clock import Clock, mainthread
 from kivy.lang import Builder
-from kivy.network.urlrequest import UrlRequest, UrlRequestUrllib
 from kivy.properties import StringProperty, NumericProperty, ObjectProperty, ListProperty
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import NoTransition
@@ -32,51 +43,44 @@ from kivy.utils import escape_markup
 
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.dialog import MDDialog
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.label import MDLabel
-from kivymd.uix.progressindicator import MDLinearProgressIndicator
 from kivymd.uix.recycleview import MDRecycleView
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.widget import MDWidget
 
-import Utils
-from worlds.minecraft.downloader import ServerInstallData, StepsStep, SyncStep
+
+from worlds.minecraft.downloader import StepsStep, SyncStep, BytesToStringStep
 from worlds.minecraft.downloader.Java import DownloadJava
 from worlds.minecraft.downloader.NeoForge import DownloadNeoForge
 from worlds.minecraft.downloader.Utilities import DownloadStep, FetchStep
 
-version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/main/versions/minecraft_versions.json"
+version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/refs/heads/main/versions/minecraft_versions.json"
 
-# TODO: Import/fix options.py and/or whatever is being generated in host.yaml
-options = Utils.get_settings()["minecraft_options"]
-
-os.environ["KIVY_NO_CONSOLELOG"] = "1"
-os.environ["KIVY_NO_FILELOG"] = "1"
-os.environ["KIVY_NO_ARGS"] = "1"
-os.environ["KIVY_LOG_ENABLE"] = "0"
-
-Config.set("input", "mouse", "mouse,disable_multitouch")
-Config.set("kivy", "exit_on_escape", "0")
-Config.set("graphics", "multisamples", "0")
-
-parser = argparse.ArgumentParser()
-parser.add_argument("apmc_file", default=None, nargs='?', help="Path to an Archipelago Minecraft data file (.apmc)")
-
-args, rest = parser.parse_known_args()
-
+if TYPE_CHECKING:
+    from worlds.minecraft import MinecraftSettings
+import Utils
 Utils.init_logging('MinecraftClient')
 logger = logging.getLogger("MinecraftClient")
 
+class VersionsJson(TypedDict):
+    version: str
+    channel: str
+    data: int
+    java: int
+    minecraft: str
+    url: str
 
 def load_text(*path: str):
-    return pkgutil.get_data(__name__, "/".join(path)).decode()
+    data_path = 'worlds.minecraft' if __name__ == '__main__' else __name__
+    return pkgutil.get_data(data_path, "/".join(path)).decode()
 
 
 def load_image(*path: str):
-    data = io.BytesIO(pkgutil.get_data(__name__, "/".join(path)))
+    data_path = 'worlds.minecraft' if __name__ == '__main__' else __name__
+    data = io.BytesIO(pkgutil.get_data(data_path, "/".join(path)))
     texture = CoreImage(data, ext="png")
     return texture
 
@@ -85,6 +89,9 @@ def format_bytes(size):
     power = 0 if size <= 0 else floor(log(size, 1024))
     return f"{round(size / 1024 ** power, 2)} {['B', 'KB', 'MB', 'GB', 'TB'][int(power)]}"
 
+
+def get_options() -> 'MinecraftSettings':
+    return Utils.get_settings()['minecraft_options']
 
 class ServerStatus(Enum):
     STOPPED = 0
@@ -101,7 +108,7 @@ class ServerStatus(Enum):
         return self.value == other.value
 
 
-def get_recent_items() -> List:
+def get_recent_items(options: 'MinecraftSettings') -> List:
     if not os.path.isdir(options.server_directory):
         os.makedirs(options.server_directory)
     saves = []
@@ -111,7 +118,8 @@ def get_recent_items() -> List:
             description = "None"
             with open(save, "r") as jsonfile:
                 save = json.load(jsonfile)
-                description = save["description"]
+                if 'description' in  save:
+                    description = save["description"]
             saves.append((description, directory))
     return saves
 
@@ -119,51 +127,64 @@ def get_recent_items() -> List:
 class MinecraftClient(MDApp):
     stop = threading.Event()
 
-    def __init__(self, **kwargs):
+    def __init__(self, args, **kwargs):
         super().__init__(**kwargs)
         self.index = 0
         self.welcome_window: Optional[WelcomeWindow] = None
         self.window_manager: Optional[WindowManager] = None
         self.server_window: Optional[ServerWindow] = None
-        self.minecraft_versions: dict[str, list] = {}
+        self.minecraft_versions: defaultdict[str, List[VersionsJson]] = defaultdict(lambda: list())
+        # release channel to list of versions, I guess
         self.apmc = None
-        self.version = {}
+        self.version: VersionsJson = dict()
         self.server = None
         self.java_url = None
         self.status: ServerStatus = ServerStatus.STOPPED
         self.apmc_path = None
-        self.mod_info = {}
+        self.mod_info: List[VersionsJson] = list()
         self.release_chanel = None
+        self.args = args
         logger.info(f"Client Initialized")
-        self._init_mod_info()
 
     # Handles (re)loading mod info, whether from a successful HTTP request or not
-    def _handle_mod_info(self, resp):
+    def _handle_mod_info(self, context: dict[str, Any], resp: Optional[Any] = None) -> None:
+        options = get_options()
+        fp = os.path.join(options.server_directory, 'ap-version.json')
+        logger.debug(f"Got response: {resp}")
         if resp:
-            self.mod_info = resp
+            self.mod_info: List[VersionsJson] = json.loads(resp)
             os.makedirs(options.server_directory, exist_ok=True)
             with open(fp, 'w') as f:
-                self.mod_info = json.dump(resp, f)
+                json.dump(self.mod_info, f)
+            self._init_mc_versions()
             return
 
-        fp = os.path.join(options.server_directory, 'ap-version.json')
         if not os.path.exists(fp):
             return
 
         try:
             with open(fp, 'r') as f:
-                self.mod_info = json.load(f)
-        except Exception as e:
-            logger.error("Failed to parse ap-version JSON", e)
+                self.mod_info: List[VersionsJson] = json.load(f)
+            self._init_mc_versions()
+        except:
+            logger.error("Failed to parse ap-version JSON", exc_info=True)
+
+
+    def _init_mc_versions(self):
+        self.minecraft_versions.clear()
+        for data in self.mod_info:
+            self.minecraft_versions[data['channel']].append(data)
 
     # Handles initializing the mod info fetching process
     def _init_mod_info(self):
         StepsStep(
+            "Download Versions",
             SyncStep(self._handle_mod_info), # Load the cached JSON file
             FetchStep(url=version_file_endpoint), # Download the latest version
+            BytesToStringStep(),
             SyncStep(self._handle_mod_info), # Save the latest version (if available)
-            # TODO: self.auto_start_server() ?
-        ).run(error_ok=True)
+            SyncStep(self.auto_start_server),
+        ).run(dict(), error_ok=True)
 
     def build(self):
         logger.info(f"building client")
@@ -176,22 +197,27 @@ class MinecraftClient(MDApp):
         self.window_manager.add_widget(self.server_window)
         logger.info(f"client built")
 
-        # send our request out to fetch the versions file
-        logger.info(f"fetching versions file")
-        self._init_mod_info()
-
         logger.info(f"binding on close request")
         Window.bind(on_request_close=self.on_request_close)
 
         logger.info(f"returning window manager")
         return self.window_manager
 
+    def on_start(self):
+        # send our request out to fetch the versions file
+        logger.info(f"fetching versions file")
+        self._init_mod_info()
+
     def on_request_close(self, *arg):
         if self.status == ServerStatus.RUNNING:
+            # TODO(cang): this hangs and I don't know why
+            # It does appear as though the server shuts down?
             self.send_command("stop")
             Clock.schedule_interval(self.close, 1 / 60)
             return True
-        sys.exit()
+        # Seems like calling sys.exit() here freaks out
+        # But letting it shutdown naturally works out ok
+
 
     def close(self, dt):
         if self.stop.is_set():
@@ -201,9 +227,10 @@ class MinecraftClient(MDApp):
         return load_image("assets", "icon.png")
 
     def init(self, dt=None):
+        options = get_options()
         layout: MDWidget = self.welcome_window.ids.saves
         layout.clear_widgets()
-        saves = get_recent_items()
+        saves = get_recent_items(options)
         if len(saves) == 0:
             layout.add_widget(MDLabel(text="No saves"))
         else:
@@ -215,15 +242,17 @@ class MinecraftClient(MDApp):
         ids.max_memory.value = options.max_heap_size
         ids.min_memory.value = options.min_heap_size
         ids.release_option.value = options.release_channel
-        ids.release_option.options = self.minecraft_versions.keys()
+        ids.release_option.mc_options = self.minecraft_versions.keys()
 
-    def auto_start_server(self):
+    def auto_start_server(self, context: dict[str, Any], *ignore):
         Clock.schedule_once(self.init, 1)
-        self.apmc_path = os.path.abspath(args.apmc_file) if args.apmc_file else None
+        self.apmc_path = os.path.abspath(self.args.apmc_file) if type(self.args.apmc_file) is str else None
         if self.apmc_path:
             self.open_apmc(path=self.apmc_path)
 
     def open_apmc(self, path=None):
+        options = get_options()
+        logger.info(self.mod_info)
         self.apmc_path = path
         if self.apmc_path is None:
             # TODO: Replace filedialog from KTinker with MDDialog?
@@ -231,20 +260,34 @@ class MinecraftClient(MDApp):
                                                         filetypes=(("Archipelago Minecraft", "*.apmc"),))
         if self.apmc_path is None or self.apmc_path == "" or os.path.isfile(self.apmc_path) is False:
             return
-        with open(self.apmc_path, "r") as f:
-            data = f.read()
 
-            if data.startswith("e"):
-                from base64 import b64decode
-                apmc = json.loads(b64decode(data))
-            elif data.startswith("{"):
-                apmc = json.loads(data)
+        # APContainer makes zips
+        if zipfile.is_zipfile(self.apmc_path):
+            with zipfile.ZipFile(self.apmc_path, 'r') as zf:
+                for entry in zf.infolist():
+                    if entry.filename.endswith(".apmc"):
+                        embedded_apmc = entry.filename
+                        break
+                with zf.open(embedded_apmc, 'r' ) as f:
+                    data = f.read()
+                    data = data.decode('utf-8')
+                    if data.startswith("e"):
+                        apmc = json.loads(b64decode(data))
+                    elif data.startswith("{"):
+                        apmc = json.loads(data)
+        else:
+            with open(self.apmc_path, 'r') as f:
+                data = f.read()
+                if data.startswith("e"):
+                    apmc = json.loads(b64decode(data))
+                elif data.startswith("{"):
+                    apmc = json.loads(data)
 
         if apmc is not None:
             try:
                 self.apmc = apmc
-
-                self.version = next(filter(lambda entry: entry['version'] == self.apmc["client_version"],
+                # TODO(cang) Not sure if this is supposed to handle multiple valid MC versions
+                self.version = next(filter(lambda entry: entry['data'] == self.apmc["client_version"],
                                            self.minecraft_versions[options.release_channel]))
                 self.server_window.status.text = f"Initializing {self.version['minecraft']}"
 
@@ -255,65 +298,63 @@ class MinecraftClient(MDApp):
                 self.log_error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
                 self.apmc_path = None
 
+    def update_progress(self, value: float, content: str):
+        self.server_window.update_progress(value, content)
+
     def set_description(self, text):
         self.apmc["description"] = text
         self.start_server()
 
-    def eula_yes(self):
-        eula_path = os.path.join(options.server_directory, "eula.txt")
-        with open(eula_path, 'r+') as f:
-            text = f.read()
-            if 'false' in text:
-                f.seek(0)
-                f.write(text.replace('false', 'true'))
-                f.truncate()
-        self.start_server()
-
-    def eula_no(self):
-        self.window_manager.current = "Welcome"
-
-    def download_file(self, url, folder, on_success=None, on_error=None, file_name=None, extract=False,
-                      message="Downloading Files"):
-        self.server_window.show_progress_bar_dialog("Downloading", message, 100)
-
-        self.download = Downloader(url=url,
-                                   folder=folder,
-                                   download_popup=self.server_window.progress_popup,
-                                   on_success=on_success, on_error=on_error,
-                                   on_finish=lambda: self.server_window.close_progress_bar_dialog(),
-                                   file_name=file_name,
-                                   extract=extract)
-
     @mainthread
     def start_server(self) -> None:
-        # TODO: define better insight/typing into what self.version is
+        Utils.init_logging("MinecraftClient" )
+        options = get_options()
+        self.server_window.show_progress_bar_dialog("Installing Dependencies", "", 100)
+        context: dict[str, Any] = dict()
         StepsStep(
-            DownloadJava(options.server_directory, 21),
-            DownloadNeoForge(options.server_directory, self.version["minecraft"]), # TODO: is there a standalone JAR like fabric now? check history
-            SyncStep(lambda data: (None, os.path.join(data.mods_dir, "Archipelago.jar"))),
-            DownloadStep(self.version["url"])
+            "Download Dependencies",
+            DownloadJava(options.server_directory, self.version['java']),
+            DownloadNeoForge(options.server_directory, confirm_prompt, self.version["minecraft"]),
+            SyncStep(lambda context, data: (None, os.path.join(data.mods_dir, "Archipelago.jar"), self.version['version'])),
+            DownloadStep(self.version["url"]),
+            SyncStep(self.copy_apmc),
+            SyncStep(lambda *args: self.server_window.close_progress_bar_dialog()),
+            SyncStep(lambda *args: threading.Thread(target=self.server_thread, args=(context,)).start())
+        ).run(
+            context,
+            on_failure=self.handle_server_start_failure,
+            on_progress=self.update_progress,
         )
 
-        # TODO: migrate into above (for check_eula, integrate it as a KivyMD-based prompt into the EULA writer in NeoForge.py)
-        # if self.apmc.get("description") is None:
-        #     edit_prompt(title="Set Description", content="Set a description for this world", default="",
-        #                 confirm=lambda text: self.set_description(text))
-        #     return
+    def handle_server_start_failure(self, *args):
+        logger.error(f"Dependency Downloads failed {args}", exc_info=True)
+        self.server_window.close_progress_bar_dialog()
+        self.window_manager.current = "Welcome"
+        info_dialog("Server Start Failure", content="""
+        An error occurred while starting the server.
+        Please check the logs.
+        """)
 
-        # if not self.check_eula():
-        #     confirm_prompt(title="EULA Agreement",
-        #                    content="By running this server you agree to the Minecraft EULA"
-        #                            "\nhttps://aka.ms/MinecraftEULA\nDo you agree to the Minecraft Eula?",
-        #                    confirm=lambda _: self.eula_yes(), cancel=lambda _: self.eula_no())
-        #     return
+    def copy_apmc(self, context: dict[str, Any], *arg):
+        if self.apmc_path is None:
+            return
+        apmc_name = os.path.basename(self.apmc_path)
+        neo_dir = context['neoforge_dir']
+        apdata_dir = os.path.join(neo_dir, 'APData')
+        os.makedirs(apdata_dir, exist_ok=True)
 
-        # threading.Thread(target=self.server_thread).start()
+        neo_apmc = os.path.join(apdata_dir, apmc_name)
+        if not os.path.exists(neo_apmc):
+            with open(neo_apmc, 'wb') as f:
+                f.write(b64encode(bytes(json.dumps(self.apmc), 'utf-8')))
 
-    def server_thread(self):
+    def server_thread(self, context: dict[str, Any]):
+        options = get_options()
 
         self.status = ServerStatus.STOPPED
         self.server_window.background_color = (.5, .1, .1, 1)
         world_name = f"Archipelago-{self.apmc['seed_name']}-P{self.apmc['player_id']}"
+        self.server_window.status.text = f"Archipelago-{self.apmc['seed_name']}-{self.apmc['player_name']}"
         world_dir = os.path.join(options.server_directory, world_name)
         if not os.path.isdir(world_dir):
             os.makedirs(world_dir)
@@ -321,21 +362,20 @@ class MinecraftClient(MDApp):
         if not os.path.isfile(save_path):
             with open(save_path, "w") as file:
                 json.dump(self.apmc, file)
-
         os.environ["JAVA_OPTS"] = ""
-        self.server = subprocess.Popen((self.get_jdk(),
-                                        "-jar",
-                                        self.get_server_jar(),
-                                        "--nogui",
-                                        "--world",
-                                        world_name,
-                                        ),
+        neo_run = context['neoforge_run_args']
+        neo_dir = context['neoforge_dir']
+
+        cmd = (*neo_run, "--nogui", "--world", world_name)
+        logger.info(f"Invoking: {cmd}")
+        logger.info(f"With working dir: {neo_dir}")
+        self.server = subprocess.Popen(cmd,
                                        stderr=subprocess.PIPE,
                                        stdout=subprocess.PIPE,
                                        stdin=subprocess.PIPE,
                                        encoding="utf-8",
                                        text=True,
-                                       cwd=options.server_directory
+                                       cwd=neo_dir,
                                        )
 
         server_queue = Queue()
@@ -439,7 +479,7 @@ class FolderOption(TextOption):
 
     def button_press(self):
         # TODO: Replace filedialog from KTinker with MDDialog?
-        new_dir = filedialog.askdirectory(title="Choose Server Directory", initialdir=options.server_directory)
+        new_dir = filedialog.askdirectory(title="Choose Server Directory", initialdir=self.options.server_directory)
         if new_dir:
             self.value = new_dir
 
@@ -457,6 +497,7 @@ class RecentItem(MDBoxLayout):
         self.ids.rename_icon.texture = icon_edit.texture
 
     def load(self):
+        options = get_options()
         save_path = os.path.join(options.server_directory, self.path, "save.apmc")
         if os.path.isfile(save_path):
             self.client.open_apmc(save_path)
@@ -472,6 +513,7 @@ class RecentItem(MDBoxLayout):
                     confirm=lambda text: self.set_name(text))
 
     def set_name(self, name):
+        options = get_options()
         self.name = name
         try:
             with open(os.path.join(options.server_directory, self.path, "save.apmc"), "r+") as file:
@@ -576,6 +618,12 @@ class ServerWindow(MDScreen):
         self.progress_popup = ProgressBarDialog(title=title, text=content, max=max)
         self.progress_popup.open()
 
+    def update_progress(self, progress: float, content: str):
+        if self.progress_popup is None:
+            return
+        self.progress_popup.progress = progress * 100.0
+        self.progress_popup.progress_text = content
+
     def close_progress_bar_dialog(self):
         if self.progress_popup is not None:
             self.progress_popup.dismiss()
@@ -608,9 +656,15 @@ class WelcomeWindow(MDScreen):
         super().__init__(**kwargs)
         self.client = client
         self.apmc = None
+        options = get_options()
         Window.minimum_width, Window.minimum_height = (400, 300)
+        self.ids['path'].value = options.server_directory
+        self.ids['max_memory'].value = options.max_heap_size
+        self.ids['min_memory'].value = options.min_heap_size
+        self.ids['release_option'].value = options.release_channel
 
     def do_delete(self, target):
+        options = get_options()
         world_path = os.path.join(options.server_directory, target)
         if options.server_directory in world_path and os.path.isdir(world_path):
             shutil.rmtree(world_path)
@@ -620,6 +674,7 @@ class WelcomeWindow(MDScreen):
         confirm_prompt(title=title, content=content, confirm=lambda _: self.do_delete(target))
 
     def save_options(self):
+        options = get_options()
         options.server_directory = self.ids.path.value
         options.max_heap_size = self.ids.max_memory.value
         options.min_heap_size = self.ids.min_memory.value
@@ -628,8 +683,25 @@ class WelcomeWindow(MDScreen):
         self.client.init()
 
 
-def launch():
-    MinecraftClient().run()
+def add_to_launcher_components():
+    from worlds.LauncherComponents import Component, components, Type, SuffixIdentifier
+    components.append(Component("Minecraft Client",
+                                icon="mcicon",
+                                func=launch_subprocess,
+                                component_type=Type.CLIENT,
+                                file_identifier=SuffixIdentifier('.apmc'),
+                                ))
 
+def launch_subprocess(*args):
+    from worlds.LauncherComponents import launch
+    launch(mc_launch, "Minecraft Client", args)
 
-MinecraftClient().run()
+def mc_launch(*arguments):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("apmc_file", default=None, nargs='?', help="Path to an Archipelago Minecraft data file (.apmc)")
+    args = parser.parse_args(arguments)
+    Config.set("network", "implementation", "requests")
+    MinecraftClient(args).run()
+
+if __name__ == "__main__":
+    mc_launch(sys.argv)

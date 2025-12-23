@@ -1,11 +1,13 @@
+import logging
+
 from . import StepsStep, SyncStep
-from .Utilities import DownloadStep, FetchStep, download_file, jre_paths, ua_header, write_eula
+from .Utilities import DownloadStep, FetchStep, jre_paths
 from Utils import is_windows, is_linux
 import os
-import requests
 import zipfile
 import platform
-from typing import TypedDict
+from typing import TypedDict, Any
+
 
 class Download(TypedDict):
     checksum: str
@@ -50,20 +52,24 @@ class DownloadJava(StepsStep):
     def __init__(self, to: str, version: int):
         self.to = to
         self.version = version
-        self.outpath = os.path.join(self.to, "java", jre_paths[self.version])
+        self.outpath = os.path.join(to, "java", jre_paths[self.version])
         self.zip_path = os.path.join(self.outpath, "jre.zip")
-        self.name = f"Downloading Java {version}..."
-
+        self.logger = logging.getLogger("MinecraftClient")
         super().__init__(
+            f"Downloading Java {version}...",
             SyncStep(self._get_api_url),
             FetchStep(),
             SyncStep(self._process_assets),
             DownloadStep(filepath=self.zip_path),
             SyncStep(self._process_extract),
         )
-    
-    def _get_api_url(self) -> str:
-        print(f"Fetching Java {self.version} versions")
+
+    def run(self, context, *args, **kwargs):
+        context['java_dir'] = self.outpath
+        super().run(context, *args, **kwargs)
+
+    def _get_api_url(self, context: dict[str, Any]) -> str:
+        self.logger.info(f"Fetching Java {self.version} versions")
 
         system = "windows" if is_windows else "linux" if is_linux else None
         if not system:
@@ -73,9 +79,8 @@ class DownloadJava(StepsStep):
 
         return f"https://api.adoptium.net/v3/assets/latest/{self.version}/hotspot?architecture={arch}&image_type=jre&os={system}&vendor=eclipse"
     
-    def _process_assets(self, assets: list[Asset]) -> str | None:
+    def _process_assets(self, context: dict[str, Any], assets: list[Asset]) -> tuple:
         data: Asset = assets[0]
-
         os.makedirs(self.outpath, exist_ok=True)
         release_path = os.path.join(self.outpath, "release")
         semver = None
@@ -84,23 +89,24 @@ class DownloadJava(StepsStep):
             with open(release_path, 'r') as file:
                 info = file.read()
                 semver = info.split('SEMANTIC_VERSION="')[1].split('"')[0]
-
+        self.logger.info(f"Received semver: {data['version']['semver']} local ver: {semver}")
         if data["version"]["semver"] == semver:
-            print("Already up-to-date, skipping download")
-            return
+            self.logger.info("Already up-to-date, skipping download")
+            return False
 
-        print(f"Downloading Java {data['version']['semver']}")
-        return data["binary"]["package"]["link"]
+        self.logger.info(f"Downloading Java {data['version']['semver']}")
+        context['java_semver'] = data['version']['semver']
+        return data["binary"]["package"]["link"], None, data['version']['semver']
     
-    def _process_extract(self, req):
-        if req is False:
+    def _process_extract(self,context: dict[str, Any], res):
+        if not res:
             # download is skipped
             return
 
-        print(f"Extracting Java {self.version}")
+        self.logger.info(f"Extracting Java {self.version}")
         with zipfile.ZipFile(self.zip_path, 'r') as zip_ref:
             subfolder = zip_ref.namelist()[0]
-            for entry in zip_ref.infolist()[1:-1]:
+            for entry in zip_ref.infolist()[1:]:
                 if entry.is_dir():
                     continue
                 relative = entry.filename[len(subfolder):]
@@ -111,54 +117,6 @@ class DownloadJava(StepsStep):
                     file.write(zip_ref.read(entry.filename))
 
         os.remove(self.zip_path)
-
-def download_jre(to: str, version: int) -> str:
-    print(f"Fetching Java {version} versions")
-
-    system = "windows" if is_windows else "linux" if is_linux else None
-    if not system:
-        raise Exception("Unsupported operating system for Java download")
-    
-    arch = "aarch64" if platform.machine() in ["aarch64", "arm64"] else "x64"
-
-    api_url = f"https://api.adoptium.net/v3/assets/latest/{version}/hotspot?architecture={arch}&image_type=jre&os={system}&vendor=eclipse"
-    data: Asset = requests.get(api_url, headers=ua_header).json()[0]
-
-    outpath = os.path.join(to, "java", jre_paths[version])
-    os.makedirs(outpath, exist_ok=True)
-    release_path = os.path.join(outpath, "release")
-    semver = None
-
-    if os.path.exists(release_path):
-        with open(release_path, 'r') as file:
-            info = file.read()
-            semver = info.split('SEMANTIC_VERSION="')[1].split('"')[0]
-
-    if data["version"]["semver"] == semver:
-        print("Already up-to-date, skipping download")
-        return
-
-    print(f"Downloading Java {data['version']['semver']}")
-    url = data["binary"]["package"]["link"]
-    zip_path = os.path.join(outpath, "jre.zip")
-    download_file(zip_path, url)
-
-    print(f"Extracting Java {version}")
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        subfolder = zip_ref.namelist()[0]
-        for entry in zip_ref.infolist()[1:-1]:
-            if entry.is_dir():
-                continue
-            relative = entry.filename[len(subfolder):]
-            filepath = os.path.join(outpath, *relative.split("/"))
-            dirpath = os.path.dirname(filepath)
-            os.makedirs(dirpath, exist_ok=True)
-            with open(filepath, 'wb') as file:
-                file.write(zip_ref.read(entry.filename))
-
-    os.remove(zip_path)
-
-    return get_java_path(to, version)
 
 def get_java_path(to: str, version: int) -> str:
     jre = jre_paths[version]

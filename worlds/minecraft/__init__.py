@@ -9,13 +9,19 @@ from BaseClasses import Region, Entrance, Item, Tutorial, ItemClassification, Lo
 from worlds.AutoWorld import World, WebWorld
 
 from . import Constants
+from .Container import MinecraftContainer
+from .MinecraftClient import add_to_launcher_components
 from .Options import MinecraftOptions
 from .Structures import shuffle_structures
 from .ItemPool import build_item_pool, get_junk_item_names
 from .Rules import set_rules
+from ..LauncherComponents import icon_paths
 
 client_version = 9
 
+icon_paths['mcicon'] = f"ap:{__name__}/assets/mcicon.png"
+
+add_to_launcher_components()
 
 class MinecraftSettings(settings.Group):
     class ForgeDirectory(settings.OptionalUserFolderPath):
@@ -32,8 +38,19 @@ class MinecraftSettings(settings.Group):
         Path to Java executable. If not set, will attempt to fall back to Java system installation.
         """
 
+    class ServerDirectory(settings.OptionalUserFolderPath):
+        """
+        Path to local directory to install Java, Neo Forge, etc.
+        """
+        @classmethod
+        def validate(cls, path: str):
+            if os.path.exists(path) and not os.path.isdir(path):
+                raise ValueError(f"'{path}' must be a folder")
+
+    server_directory: ServerDirectory = ServerDirectory("Minecraft AP Server Directory")
     forge_directory: ForgeDirectory = ForgeDirectory("Minecraft NeoForge server")
     max_heap_size: str = "2G"
+    min_heap_size: str = "1G"
     release_channel: ReleaseChannel = ReleaseChannel("release")
     java: JavaExecutable = JavaExecutable("")
 
@@ -179,8 +196,14 @@ class MinecraftWorld(World):
     def generate_output(self, output_directory: str) -> None:
         data = self._get_mc_data()
         filename = f"{self.multiworld.get_out_file_name_base(self.player)}.apmc"
-        with open(os.path.join(output_directory, filename), 'wb') as f:
-            f.write(b64encode(bytes(json.dumps(data), 'utf-8')))
+
+        container = MinecraftContainer(data,
+                                       filename,
+                                       os.path.join(output_directory, filename),
+                                       self.player,
+                                       self.multiworld.get_file_safe_player_name(self.player),
+                                       )
+        container.write()
 
     def fill_slot_data(self) -> dict:
         return self._get_mc_data()
