@@ -133,7 +133,9 @@
         "Crafters Crafting Crafters",
         "Lighten Up",
         "Over-Overkill",
-        "Revaulting"
+        "Revaulting",
+        "Stay Hydrated!",
+        "Heart Transplanter"
     ],
     "locations_by_region": {
         "Overworld": [
@@ -214,7 +216,9 @@
             "Blowback",
             "Who Needs Rockets?",
             "Crafters Crafting Crafters",
-            "Lighten Up"
+            "Lighten Up",
+            "Stay Hydrated!",
+            "Heart Transplanter"
         ],
         "The Nether": [
             "Hot Tourist Destinations",
