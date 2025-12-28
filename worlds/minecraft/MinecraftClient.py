@@ -439,7 +439,7 @@ class MinecraftClient(MDApp):
 
                 if self.status < ServerStatus.RUNNING:
 
-                    server_starting_match = re.match(r"\[[0-9:]+] \[[A-Za-z0-9 /]+] \[[A-Za-z0-9 /]+]: Starting minecraft server version ([0-9.]+)", raw_message)
+                    server_starting_match = re.match(r"\[[0-9:]+] (?:\[[A-Za-z0-9 /]+] ?){1,2}: Starting minecraft server version ([0-9.]+)", raw_message)
                     if server_starting_match:
                         self.log_info(f"Starting Minecraft {server_starting_match.group(1)}")
                         self.server_window.status.text = f"Starting Server for {server_starting_match.group(1)}"
@@ -447,7 +447,7 @@ class MinecraftClient(MDApp):
                         self.version["minecraft"] = server_starting_match.group(1)
                         self.status = ServerStatus.STARTING
 
-                    server_started_match = re.match(r"\[[0-9:]+] \[[A-Za-z0-9 /]+] \[[A-Za-z0-9 /]+]: Done", raw_message)
+                    server_started_match = re.match(r"\[[0-9:]+] (?:\[[A-Za-z0-9 /]+] ?){1,2}: Done", raw_message)
                     if server_started_match:
                         self.server_window.status.text = f"Server Running. Connect to `127.0.0.1` in Minecraft {self.version['minecraft']}"
                         self.server_window.background_color = (.1, .5, .1, 1)
