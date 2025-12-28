@@ -245,7 +245,7 @@ class MinecraftClient(MDApp):
                     # attempt less graceful shutdown
                     self.server.kill()
                     self.server.wait(timeout=2)
-                except e:
+                except Exception as e:
                     logger.warning("Failed to kill Minecraft server", exc_info=e)
                     pass
 
