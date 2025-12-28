@@ -144,6 +144,7 @@ class MinecraftClient(MDApp):
         self.mod_info: List[VersionsJson] = list()
         self.release_chanel = None
         self.args = args
+        self.closing_at = 0
         logger.info(f"Client Initialized")
 
     # Handles (re)loading mod info, whether from a successful HTTP request or not
@@ -209,19 +210,48 @@ class MinecraftClient(MDApp):
         self._init_mod_info()
 
     def on_request_close(self, *arg):
-        if self.status == ServerStatus.RUNNING:
-            # TODO(cang): this hangs and I don't know why
-            # It does appear as though the server shuts down?
+        # if the server is stopped already then we don't need to intervene
+        if self.stop.is_set():
+            return
+        
+        # if this is the first request to close the server, then let's send the shutdown signals
+        if self.closing_at == 0:
+            # save when shutdown started using increasing clock
+            # (`close` function's `dt` arg does not work like you might expect from the docs description; it is just a delta, so it isn't useful)
+            self.closing_at = time.monotonic()
+
+            # send `/stop` to start server shutdown
             self.send_command("stop")
-            Clock.schedule_interval(self.close, 1 / 60)
-            return True
-        # Seems like calling sys.exit() here freaks out
-        # But letting it shutdown naturally works out ok
+
+            # check every tenth second for the server to be closed
+            Clock.schedule_interval(self.close, 0.1)
+        
+        # cancel the close request (we'll close it ourselves when we're ready)
+        return True
 
 
     def close(self, dt):
-        if self.stop.is_set():
-            sys.exit()
+        # determine if X seconds have elapsed since starting
+        elapsed = time.monotonic() - self.closing_at
+        force_close = elapsed >= 15
+        if force_close:
+            # server is not responding
+            try:
+                # attempt somewhat graceful shutdown
+                self.server.terminate()
+                self.server.wait(timeout=2)
+            except:
+                try:
+                    # attempt less graceful shutdown
+                    self.server.kill()
+                    self.server.wait(timeout=2)
+                except e:
+                    logger.warning("Failed to kill Minecraft server", exc_info=e)
+                    pass
+
+        # once server is stopped, close kivy window (has to be done manually since the close request was cancelled)
+        if self.stop.is_set() or force_close:
+            super().stop()
 
     def get_application_icon(self):
         return load_image("assets", "icon.png")
@@ -388,6 +418,7 @@ class MinecraftClient(MDApp):
                 self.stop.set()
                 self.server_window.status.text = "Server Stopped"
                 self.server_window.background_color = (.5, .1, .1, 1)
+                self.status = ServerStatus.STOPPED
 
             while not server_queue.empty():
                 raw_message: str = server_queue.get()
@@ -408,8 +439,7 @@ class MinecraftClient(MDApp):
 
                 if self.status < ServerStatus.RUNNING:
 
-                    server_starting_match = re.match(r"^\[[0-9:]+] \[main/INFO]: Loading Minecraft ([0-9.]+)",
-                                                     raw_message)
+                    server_starting_match = re.match(r"\[[0-9:]+] \[[A-Za-z0-9 /]+] \[[A-Za-z0-9 /]+]: Starting minecraft server version ([0-9.]+)", raw_message)
                     if server_starting_match:
                         self.log_info(f"Starting Minecraft {server_starting_match.group(1)}")
                         self.server_window.status.text = f"Starting Server for {server_starting_match.group(1)}"
@@ -417,8 +447,7 @@ class MinecraftClient(MDApp):
                         self.version["minecraft"] = server_starting_match.group(1)
                         self.status = ServerStatus.STARTING
 
-                    server_started_match = re.match(
-                        r"^\[[0-9:]+] \[Server thread/INFO]: Done \([0-9.]+s\)! For help, type \"help\"", raw_message)
+                    server_started_match = re.match(r"\[[0-9:]+] \[[A-Za-z0-9 /]+] \[[A-Za-z0-9 /]+]: Done", raw_message)
                     if server_started_match:
                         self.server_window.status.text = f"Server Running. Connect to `127.0.0.1` in Minecraft {self.version['minecraft']}"
                         self.server_window.background_color = (.1, .5, .1, 1)
