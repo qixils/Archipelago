@@ -48,7 +48,6 @@ class MinecraftSettings(settings.Group):
                 raise ValueError(f"'{path}' must be a folder")
 
     server_directory: ServerDirectory = ServerDirectory("Minecraft AP Server Directory")
-    forge_directory: ForgeDirectory = ForgeDirectory("Minecraft NeoForge server")
     max_heap_size: str = "2G"
     min_heap_size: str = "1G"
     release_channel: ReleaseChannel = ReleaseChannel("release")
