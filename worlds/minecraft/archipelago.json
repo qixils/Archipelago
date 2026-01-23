@@ -1,1 +1,10 @@
-{"compatible_version": 7, "version": 7, "game": "Minecraft"}
+{
+    "game": "Minecraft",
+    "authors": [
+        "qixils",
+        "Seafo",
+        "cjmang"
+    ],
+    "minimum_ap_version": "0.6.3",
+    "world_version": "2.0.0"
+}
