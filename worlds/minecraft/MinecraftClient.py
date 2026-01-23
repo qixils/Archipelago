@@ -14,22 +14,14 @@ import zipfile
 from base64 import b64encode, b64decode
 from collections import defaultdict
 
-
-if __name__ == '__main__':
-    # makes this module runnable from its world folder.
-    sys.path.remove(os.path.dirname(__file__))
-    new_home = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-    os.chdir(new_home)
-    sys.path.append(new_home)
-
 from enum import Enum
 from math import floor, log
 from queue import Queue
 from tkinter import filedialog
 from typing import List, Optional, TYPE_CHECKING, Any, TypedDict
 
-# this import is needed because of an AP assert
-import kvui
+import Utils
+
 from kivy import Config
 from kivy.core.window import Window
 from kivy.core.image import Image as CoreImage
@@ -51,19 +43,18 @@ from kivymd.uix.screen import MDScreen
 from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.widget import MDWidget
 
-
 from worlds.minecraft.downloader import StepsStep, SyncStep, BytesToStringStep
 from worlds.minecraft.downloader.Java import DownloadJava
 from worlds.minecraft.downloader.NeoForge import DownloadNeoForge
 from worlds.minecraft.downloader.Utilities import DownloadStep, FetchStep
 
-version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/refs/heads/main/versions/minecraft_versions.json"
 
 if TYPE_CHECKING:
     from worlds.minecraft import MinecraftSettings
-import Utils
-Utils.init_logging('MinecraftClient')
+
 logger = logging.getLogger("MinecraftClient")
+
+version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/refs/heads/main/versions/minecraft_versions.json"
 
 class VersionsJson(TypedDict):
     version: str
@@ -145,6 +136,7 @@ class MinecraftClient(MDApp):
         self.release_chanel = None
         self.args = args
         self.closing_at = 0
+        Utils.init_logging('MinecraftClient')
         logger.info(f"Client Initialized")
 
     # Handles (re)loading mod info, whether from a successful HTTP request or not
@@ -341,7 +333,6 @@ class MinecraftClient(MDApp):
 
     @mainthread
     def start_server(self) -> None:
-        Utils.init_logging("MinecraftClient" )
         options = get_options()
         self.server_window.show_progress_bar_dialog("Installing Dependencies", "", 100)
         context: dict[str, Any] = dict()
@@ -714,16 +705,6 @@ class WelcomeWindow(MDScreen):
         options.release_channel = self.ids.release_option.value
         Utils.get_settings().save()
         self.client.init()
-
-
-def add_to_launcher_components():
-    from worlds.LauncherComponents import Component, components, Type, SuffixIdentifier
-    components.append(Component("Minecraft Client",
-                                icon="mcicon",
-                                func=launch_subprocess,
-                                component_type=Type.CLIENT,
-                                file_identifier=SuffixIdentifier('.apmc'),
-                                ))
 
 def launch_subprocess(*args):
     from worlds.LauncherComponents import launch

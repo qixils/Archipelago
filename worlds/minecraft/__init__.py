@@ -7,10 +7,10 @@ from typing import Dict, Any
 
 from BaseClasses import Region, Entrance, Item, Tutorial, ItemClassification, Location
 from worlds.AutoWorld import World, WebWorld
+from worlds.LauncherComponents import Component, components, Type, SuffixIdentifier
 
 from . import Constants
 from .Container import MinecraftContainer
-from .MinecraftClient import add_to_launcher_components
 from .Options import MinecraftOptions
 from .Structures import shuffle_structures
 from .ItemPool import build_item_pool, get_junk_item_names
@@ -21,7 +21,21 @@ client_version = 9
 
 icon_paths['mcicon'] = f"ap:{__name__}/assets/mcicon.png"
 
-add_to_launcher_components()
+# register client
+def launch_client(*args):
+    from .MinecraftClient import launch_subprocess
+    launch_subprocess(*args)
+
+components.append(
+    Component(
+        "Minecraft Client",
+        icon="mcicon",
+        func=launch_client,
+        component_type=Type.CLIENT,
+        file_identifier=SuffixIdentifier('.apmc'),
+    )
+)
+
 
 class MinecraftSettings(settings.Group):
     class ForgeDirectory(settings.OptionalUserFolderPath):
