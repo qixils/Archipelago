@@ -1,9 +1,1 @@
-{
-    "game": "Minecraft",
-    "authors": [
-        "qixils",
-        "Seafo"
-    ],
-    "minimum_ap_version": "0.6.3",
-    "world_version": "0.3.0"
-}
+{"compatible_version": 7, "version": 7, "game": "Minecraft"}
