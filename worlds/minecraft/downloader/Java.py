@@ -121,7 +121,7 @@ class DownloadJava(StepsStep):
 def get_java_path(to: str, version: int) -> str:
     jre = jre_paths[version]
 
-    bin = "java.exe" if is_windows else "java" if is_linux else None
+    bin = "javaw.exe" if is_windows else "javaw" if is_linux else None
     if not bin:
         raise Exception("Unsupported operating system for Java path retrieval")
 
