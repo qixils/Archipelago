@@ -214,6 +214,10 @@ class MinecraftClient(MDApp):
         if self.stop.is_set():
             return
         
+        # likewise if there is no server, nothing to worry about
+        if not self.server:
+            return
+        
         # if this is the first request to close the server, then let's send the shutdown signals
         if self.closing_at == 0:
             # save when shutdown started using increasing clock
