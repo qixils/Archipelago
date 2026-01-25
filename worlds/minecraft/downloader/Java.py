@@ -1,4 +1,6 @@
 import logging
+import shutil
+import tempfile
 
 from . import StepsStep, SyncStep
 from .Utilities import DownloadStep, FetchStep, jre_paths
@@ -6,6 +8,7 @@ from Utils import is_windows, is_linux
 import os
 import zipfile
 import platform
+import tarfile
 from typing import TypedDict, Any
 
 
@@ -104,24 +107,36 @@ class DownloadJava(StepsStep):
             return
 
         self.logger.info(f"Extracting Java {self.version}")
-        with zipfile.ZipFile(self.zip_path, 'r') as zip_ref:
-            subfolder = zip_ref.namelist()[0]
-            for entry in zip_ref.infolist()[1:]:
-                if entry.is_dir():
-                    continue
-                relative = entry.filename[len(subfolder):]
-                filepath = os.path.join(self.outpath, *relative.split("/"))
-                dirpath = os.path.dirname(filepath)
-                os.makedirs(dirpath, exist_ok=True)
-                with open(filepath, 'wb') as file:
-                    file.write(zip_ref.read(entry.filename))
+        # TODO: this probably also needs a mac flow, for .pkg files
+        if is_linux:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                with tarfile.open(self.zip_path, 'r') as tarball:
+                    tarball.extractall(temp_dir, filter='tar')
+                    items = os.listdir(temp_dir)
+                    if len(items) == 1 and os.path.isdir(os.path.join(temp_dir, items[0])):
+                        original_dir = os.path.join(temp_dir, items[0])
+                    else:
+                        original_dir = temp_dir
+                shutil.copytree(original_dir, self.outpath, dirs_exist_ok=True)
+        else:
+            with zipfile.ZipFile(self.zip_path, 'r') as zip_ref:
+                subfolder = zip_ref.namelist()[0]
+                for entry in zip_ref.infolist()[1:]:
+                    if entry.is_dir():
+                        continue
+                    relative = entry.filename[len(subfolder):]
+                    filepath = os.path.join(self.outpath, *relative.split("/"))
+                    dirpath = os.path.dirname(filepath)
+                    os.makedirs(dirpath, exist_ok=True)
+                    with open(filepath, 'wb') as file:
+                        file.write(zip_ref.read(entry.filename))
 
         os.remove(self.zip_path)
 
 def get_java_path(to: str, version: int) -> str:
     jre = jre_paths[version]
 
-    bin = "javaw.exe" if is_windows else "javaw" if is_linux else None
+    bin = "javaw.exe" if is_windows else "java" if is_linux else None
     if not bin:
         raise Exception("Unsupported operating system for Java path retrieval")
 

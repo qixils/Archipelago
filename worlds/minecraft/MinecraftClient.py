@@ -17,7 +17,6 @@ from collections import defaultdict
 from enum import Enum
 from math import floor, log
 from queue import Queue
-from tkinter import filedialog
 from typing import List, Optional, TYPE_CHECKING, Any, TypedDict
 
 import Utils
@@ -282,8 +281,10 @@ class MinecraftClient(MDApp):
         self.apmc_path = path
         if self.apmc_path is None:
             # TODO: Replace filedialog from KTinker with MDDialog?
-            self.apmc_path = filedialog.askopenfilename(title="Choose AP Minecraft file",
-                                                        filetypes=(("Archipelago Minecraft", "*.apmc"),))
+            # self.apmc_path = filedialog.askopenfilename(title="Choose AP Minecraft file",
+            #                                             filetypes=(("Archipelago Minecraft", "*.apmc"),))
+            self.apmc_path = Utils.open_filename(title="Choose AP Minecraft file",
+                                filetypes=(("Archipelago Minecraft", "*.apmc"),))
         if self.apmc_path is None or self.apmc_path == "" or os.path.isfile(self.apmc_path) is False:
             return
 
@@ -503,7 +504,8 @@ class FolderOption(TextOption):
 
     def button_press(self):
         # TODO: Replace filedialog from KTinker with MDDialog?
-        new_dir = filedialog.askdirectory(title="Choose Server Directory", initialdir=self.options.server_directory)
+        # new_dir = filedialog.askdirectory(title="Choose Server Directory", initialdir=self.options.server_directory)
+        new_dir = Utils.open_directory(title="Choose Server Directory")
         if new_dir:
             self.value = new_dir
 
