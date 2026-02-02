@@ -26,6 +26,6 @@ class MinecraftContainer(APPlayerContainer):
 
     def write_contents(self, opened_zipfile: zipfile.ZipFile) -> None:
         super().write_contents(opened_zipfile)
-        filename = f"{self.patch_name}.apmc"
+        filename = f"{self.patch_name}_json.apmc"
         opened_zipfile.writestr(filename,json.dumps(self.patch_data))
 

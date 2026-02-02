@@ -208,7 +208,7 @@ class MinecraftWorld(World):
 
     def generate_output(self, output_directory: str) -> None:
         data = self._get_mc_data()
-        filename = f"{self.multiworld.get_out_file_name_base(self.player)}.apmc"
+        filename = self.multiworld.get_out_file_name_base(self.player)
 
         container = MinecraftContainer(data,
                                        filename,
