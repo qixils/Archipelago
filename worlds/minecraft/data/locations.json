@@ -188,6 +188,7 @@
             "Time to Strike!",
             "Cow Tipper",
             "When Pigs Fly",
+            "Overkill",
             "Librarian",
             "Wax On",
             "Wax Off",
@@ -211,10 +212,6 @@
             "Shear Brilliance",
             "Good as New",
             "The Whole Pack",
-            "Minecraft: Trial(s) Edition",
-            "Under Lock and Key",
-            "Blowback",
-            "Who Needs Rockets?",
             "Crafters Crafting Crafters",
             "Lighten Up",
             "Stay Hydrated!",
@@ -262,14 +259,11 @@
             "Into Fire",
             "Beaconator",
             "Withering Heights",
-            "A Terrible Fortress",
-            "Overkill"
+            "A Terrible Fortress"
         ],
         "Pillager Outpost": [
             "Who's the Pillager Now?",
-            "Voluntary Exile",
-            "Over-Overkill",
-            "Revaulting"
+            "Voluntary Exile"
         ],
         "Bastion Remnant": [
             "War Pigs",
@@ -295,6 +289,14 @@
         ],
         "Trail Ruins": [
             "Is It a Bird?"
+        ],
+        "Trial Chambers": [
+            "Minecraft: Trial(s) Edition",
+            "Under Lock and Key",
+            "Blowback",
+            "Who Needs Rockets?",
+            "Over-Overkill",
+            "Revaulting"
         ]
     }
 }   
