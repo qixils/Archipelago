@@ -14,7 +14,7 @@ from .Container import MinecraftContainer
 from .Options import MinecraftOptions
 from .Structures import shuffle_structures
 from .ItemPool import build_item_pool, get_junk_item_names
-from .Rules import set_rules
+from .Rules import set_all_rules
 from ..LauncherComponents import icon_paths
 
 client_version = 9
@@ -204,7 +204,7 @@ class MinecraftWorld(World):
     def create_items(self) -> None:
         self.multiworld.itempool += build_item_pool(self)
 
-    set_rules = set_rules
+    set_rules = set_all_rules
 
     def generate_output(self, output_directory: str) -> None:
         data = self._get_mc_data()

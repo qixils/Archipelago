@@ -657,10 +657,17 @@ class TestAdvancements(MCTestBase):
             ["Monsters Hunted", False, [], ['Archery']],
             ["Monsters Hunted", False, [], ['Enchanting']],
             ["Monsters Hunted", False, [], ['Lead']],
-            ["Monsters Hunted", True, ['Progressive Resource Crafting', 'Progressive Weapons', 'Progressive Weapons', 'Progressive Tools',
-                                       'Flint and Steel', 'Bucket', 'Progressive Tools', 'Progressive Tools', 'Progressive Weapons',
-                                       'Progressive Armor', 'Progressive Armor', 'Brewing', 'Bottles', 'Enchanting',
-                                       'Shield', 'Archery', 'Lead', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls']],
+            ["Monsters Hunted", False, [], ['Bucket', 'Fishing Rod']],
+            ["Monsters Hunted", True, ['Progressive Weapons', 'Progressive Weapons', 'Progressive Weapons', 'Lead',
+                                       'Progressive Resource Crafting', 'Flint and Steel', 'Brewing', 'Bottles',
+                                       'Progressive Tools', 'Progressive Tools', 'Progressive Tools', 'Enchanting',
+                                       'Progressive Armor', 'Progressive Armor', 'Shield', 'Archery', 'Bucket',
+                                       '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls']],
+            ["Monsters Hunted", True, ['Progressive Weapons', 'Progressive Weapons', 'Progressive Weapons', 'Lead',
+                                       'Progressive Resource Crafting', 'Flint and Steel', 'Brewing', 'Bottles',
+                                       'Progressive Tools', 'Progressive Tools', 'Progressive Tools', 'Enchanting',
+                                       'Progressive Armor', 'Progressive Armor', 'Shield', 'Archery', 'Fishing Rod',
+                                       '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls', '3 Ender Pearls']],
             ])
 
     def test_42049(self):
