@@ -89,7 +89,7 @@ def overworld_villager(world: "MinecraftWorld", state: CollectionState, player: 
                 ))
     elif village_region == 'The End':
         return state.can_reach_location('Zombie Doctor', player)
-    return state.can_reach_region('Village', player)
+    return state.can_reach_region('Village', player) or state.can_reach_location('Zombie Doctor', player)
 
 
 def enter_stronghold(world: "MinecraftWorld", state: CollectionState, player: int) -> bool:
@@ -325,6 +325,7 @@ def get_rules_lookup(world, player: int):
                                                    and state.can_reach_region('The Nether', player)  # potion ingredients
                                                    and state.can_reach_region('Ocean Monument', player)  # Heart of the Sea, Dolphin's Grace, Mining Fatigue
                                                    and state.can_reach_region('Ancient City', player)  # Darkness
+                                                   and state.can_reach_region('Trial Chambers', player)  # Wind Charged
                                                    and state.has("Fishing Rod", player)  # Pufferfish, Nautilus Shells
                                                    and state.has("Archery", player)  # Spectral Arrows
                                                    and state.can_reach_location("Bring Home the Beacon", player)  # Haste
@@ -373,17 +374,18 @@ def get_rules_lookup(world, player: int):
                                           or state.can_reach_region('Village', player),
             "You Need a Mint": lambda state: can_respawn_ender_dragon(world, state, player)
                                              and has_bottle(world, state, player),
-            "Monsters Hunted": lambda state: can_respawn_ender_dragon(world, state, player) # Ghast, Hoglin, Magma Cube, Piglin
+            "Monsters Hunted": lambda state: can_respawn_ender_dragon(world, state, player)  # Ghast, Hoglin, Magma Cube, Piglin
                                              and can_kill_ender_dragon(world, state, player)  # Ender Dragon, Enderman, Endermite, Silverfish
-                                             and can_kill_wither(world, state, player) # Blaze, Wither, Wither Skeleton, Zombified Piglin
+                                             and can_kill_wither(world, state, player)  # Blaze, Wither, Wither Skeleton, Zombified Piglin
                                              and complete_raid(world, state, player)  # Ravagers; Pillager Outposts
-                                             and state.can_reach_region('Bastion Remnant', player)
-                                             and state.can_reach_region('End City', player) # Piglin Brute; Shulker
+                                             and state.can_reach_region('Bastion Remnant', player)  # Piglin Brute
+                                             and state.can_reach_region('End City', player)  # Shulker
+                                             and state.can_reach_region('Trial Chambers', player)  # Breeze
                                              and state.has("Lead", player)  # Zoglins
-                                             and state.can_reach_region('Ocean Monument', player) # Drowned
+                                             and state.can_reach_region('Ocean Monument', player)  # Drowned
                                              and (
-                                                 (can_brew_potions(world, state, player) and state.has("Fishing Rod", player)) # Water Breathing Potions for Elder Guardian, Guardian
-                                                 or (can_enchant(world, state, player) and state.has("Bucket", player)) # Aqua Affinity/Respiration and Milk/Axolotls for Elder Guardian, Guardian
+                                                 (can_brew_potions(world, state, player) and state.has("Fishing Rod", player))  # Water Breathing Potions for Elder Guardian, Guardian
+                                                 or (can_enchant(world, state, player) and state.has("Bucket", player))  # Aqua Affinity/Respiration and Milk/Axolotls for Elder Guardian, Guardian
                                              ),
             "Enchanter": lambda state: can_enchant(world, state, player),
             "Voluntary Exile": lambda state: basic_combat(world, state, player),
@@ -547,16 +549,8 @@ def get_rules_lookup(world, player: int):
                                                      or (
                                                          state.can_reach_region("Ocean Monument", player)
                                                          and basic_combat(world, state, player)
-                                                         and (
-                                                             (
-                                                                 state.has("Fishing Rod", player)
-                                                                 and can_enchant(world, state, player)
-                                                             )
-                                                             or (
-                                                                 state.has("Bucket", player)
-                                                                 and can_brew_potions(world, state, player)
-                                                             )
-                                                         )
+                                                         and state.has("Bucket", player)
+                                                         and can_enchant(world, state, player)
                                                      )
                                                      or (
                                                          state.can_reach_region("Woodland Mansion", player)
