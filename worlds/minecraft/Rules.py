@@ -63,12 +63,12 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     diamond_armor = Has("Progressive Armor", count=2) & iron_tools
 
     bow = Has("Archery")
-    resource_blocks = Has("Progressive Resource Crafting", count=2)
     crossbow = bow & iron_ingots
+    resource_blocks = Has("Progressive Resource Crafting", count=2)
     blaze_rods = Has("Blaze Rods")
     brewing = Has("Brewing") & blaze_rods
     can_enchant = Has("Enchanting") & diamond_tools
-    anvil = Has("Enchanting") & resource_blocks & iron_ingots
+    anvil = resource_blocks & iron_ingots
     enchanted_books = can_enchant & anvil
     bucket = Has("Bucket") & iron_ingots
     flint_and_steel = Has("Flint and Steel") & iron_ingots
@@ -84,10 +84,11 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     piercing_iv = Has("Piercing IV Book") & enchanted_books
     ender_pearls = Has("3 Ender Pearls")
     saddle = Has("Saddle") & iron_ingots
+    lead = Has("Lead")
     brush = Has("Brush") & copper_ingots
 
-    gold_ingots = iron_tools | nether & Has("Progressive Resource Crafting")
-    ancient_debris = potions & bed & diamond_tools
+    gold_ingots = iron_tools | (nether & Has("Progressive Resource Crafting"))
+    ancient_debris = nether & potions & bed & diamond_tools
     eye_of_ender = ender_pearls & brewing
 
     piglin_bartering = gold_ingots & (nether | bastion)
@@ -115,7 +116,6 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     can_adventure = easy_adventure | normal_adventure | hard
 
     spyglass = Has("Spyglass") & copper_ingots & can_adventure
-    lead = Has("Lead") & can_adventure
     stronghold = eye_of_ender & can_adventure
 
     easy_combat = easy & iron_weapons & iron_armor & shield
@@ -258,7 +258,7 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     # husbandry = self.get_location("Husbandry")
     country_lode_take_me_home = self.get_location("Country Lode, Take Me Home")
     bee_our_guest = self.get_location("Bee Our Guest")
-    what_a_deal = self.get_location("What a Deal!")
+    # what_a_deal = self.get_location("What a Deal!")
     uneasy_alliance = self.get_location("Uneasy Alliance")
     diamonds = self.get_location("Diamonds!")
     # a_terrible_fortress = self.get_location("A Terrible Fortress")
@@ -386,7 +386,6 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     self.set_rule(subspace_bubble, diamond_tools)
     self.set_rule(country_lode_take_me_home, iron_tools)
     self.set_rule(bee_our_guest, campfire & bottles)
-    self.set_rule(what_a_deal, village | cure_zombie)
     self.set_rule(uneasy_alliance, diamond_tools & fishing_rod)
     self.set_rule(diamonds, iron_tools)
     self.set_rule(a_throwaway_joke, combat)
@@ -413,9 +412,9 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     self.set_rule(whatever_floats_your_goat, can_adventure)
     self.set_rule(caves_and_cliffs, bucket & iron_tools)
     self.set_rule(feels_like_home, bucket & fishing_rod & saddle)
-    self.set_rule(sound_of_music, iron_tools & combat)
+    self.set_rule(sound_of_music, can_adventure & iron_tools & (combat | nether | ancient_city))
     self.set_rule(star_trader, overworld_villagers & bucket & (nether | fortress | piglin_bartering))
-    self.set_rule(birthday_song, bucket & iron_tools & (outpost | mansion))
+    self.set_rule(birthday_song, bucket & iron_tools & (outpost | (combat & mansion)))
     self.set_rule(bukkit_bukkit, bucket & can_adventure)
     self.set_rule(when_the_squad_hops_into_town, can_adventure & lead & bucket)
     self.set_rule(with_our_powers_combined, can_adventure & lead & bucket)
