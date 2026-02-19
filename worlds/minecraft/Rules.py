@@ -490,7 +490,12 @@ def get_rules_lookup(world, player: int):
                                              and state.has("Saddle", player),
             "Sound of Music": lambda state: state.has("Progressive Tools", player, 2)
                                             and has_iron_ingots(world, state, player)
-                                            and basic_combat(world, state, player),
+                                            and can_adventure(world, state, player)
+                                            and (
+                                              basic_combat(world, state, player)
+                                              or state.can_reach_region("The Nether", player)
+                                              or state.can_reach_region("Ancient City", player)
+                                            ),
             "Star Trader": lambda state: has_iron_ingots(world, state, player)
                                          and state.has('Bucket', player)
                                          and (
@@ -504,7 +509,10 @@ def get_rules_lookup(world, player: int):
                                            and has_iron_ingots(world, state, player)
                                            and (
                                                state.can_reach_region('Pillager Outpost', player)
-                                               or state.can_reach_region('Woodland Mansion', player)
+                                               or (
+                                                   basic_combat(world, state, player)
+                                                   and state.can_reach_region('Woodland Mansion', player)
+                                               )
                                             ),
             "Bukkit Bukkit": lambda state: state.has("Bucket", player)
                                            and has_iron_ingots(world, state, player)

@@ -1314,9 +1314,7 @@ class TestAdvancements(MCTestBase):
             ["Sound of Music", False, [], ["Progressive Tools"]],
             ["Sound of Music", False, [], ["Progressive Resource Crafting"]],
             ["Sound of Music", False, [], ["Progressive Weapons"]],
-            ["Sound of Music", False, [], ["Progressive Armor", "Shield"]],
-            ["Sound of Music", True, ["Progressive Tools", "Progressive Tools", "Progressive Resource Crafting", "Progressive Weapons", "Progressive Armor"]],
-            ["Sound of Music", True, ["Progressive Tools", "Progressive Tools", "Progressive Resource Crafting", "Progressive Weapons", "Shield"]],
+            ["Sound of Music", True, ["Progressive Tools", "Progressive Tools", "Progressive Resource Crafting", "Progressive Weapons"]],
             ])
 
     # bucket, nether, villager
