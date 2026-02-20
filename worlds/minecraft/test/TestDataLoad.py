@@ -2,6 +2,7 @@ import unittest
 
 from .. import Constants
 
+
 class TestDataLoad(unittest.TestCase):
 
     def test_item_data(self):
@@ -25,7 +26,7 @@ class TestDataLoad(unittest.TestCase):
 
         # Every location has a region and every region's locations are in all_locations
         all_locations: set = set(location_info['all_locations'])
-        all_locs_2: set    = set()
+        all_locs_2: set = set()
         for v in location_info['locations_by_region'].values():
             all_locs_2.update(v)
         assert all_locations == all_locs_2
@@ -49,7 +50,7 @@ class TestDataLoad(unittest.TestCase):
         for v in region_info['mandatory_connections']:
             assert v[0] in all_entrances
             assert v[1] in all_regions
-            
+
         for v in region_info['default_connections']:
             assert v[0] in all_entrances
             assert v[1] in all_regions
@@ -57,4 +58,3 @@ class TestDataLoad(unittest.TestCase):
         for k, v in region_info['illegal_connections'].items():
             assert k in all_regions
             assert set(v) <= all_entrances
-
