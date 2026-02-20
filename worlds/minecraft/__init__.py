@@ -152,11 +152,11 @@ class MinecraftWorld(World):
     def create_item(self, name: str) -> Item:
         item_class = ItemClassification.filler
         if name in Constants.item_info["progression_items"]:
-            item_class = ItemClassification.progression
-        elif name in Constants.item_info["useful_items"]:
-            item_class = ItemClassification.useful
-        elif name in Constants.item_info["trap_items"]:
-            item_class = ItemClassification.trap
+            item_class |= ItemClassification.progression
+        if name in Constants.item_info["useful_items"]:
+            item_class |= ItemClassification.useful
+        if name in Constants.item_info["trap_items"]:
+            item_class |= ItemClassification.trap
 
         return MinecraftItem(name, item_class, self.item_name_to_id.get(name, None), self.player)
 
