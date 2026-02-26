@@ -117,4 +117,5 @@ or after completing both conditions.
         * Emerald Block
         * Copper Ingot
         * Copper Block
+        * Resin Clump
         * Resin Block
