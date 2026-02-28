@@ -32,6 +32,12 @@ def shuffle_structures(self: "MinecraftWorld") -> None:
         for conn in self.options.plando_connections:
             set_pair(conn.entrance, conn.exit)
 
+    # if self.using_ut:
+    #     self.options.plando_connections.value.clear()
+    #     for structs, exits in self.passthrough[""].items():
+    #         struct_name = ""
+    #         exit_name = ""
+
     # The algorithm tries to place the most restrictive structures first. This algorithm always works on the
     # relatively small set of restrictions here, but does not work on all possible inputs with valid configurations. 
     if self.options.shuffle_structures:

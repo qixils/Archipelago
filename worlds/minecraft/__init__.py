@@ -129,6 +129,11 @@ class MinecraftWorld(World):
     item_name_to_id = Constants.item_name_to_id
     location_name_to_id = Constants.location_name_to_id
 
+    using_ut = bool
+    passthrough = dict[str, Any]
+    ut_can_gen_without_yaml = True
+    # tracker_world: ClassVar = ut_stuff.tracker_world
+
     def _get_mc_data(self) -> Dict[str, Any]:
         exits = [connection[0] for connection in Constants.region_info["default_connections"]]
         return {
@@ -147,7 +152,32 @@ class MinecraftWorld(World):
             'death_link': bool(self.options.death_link.value),
             'starting_items': json.dumps(self.options.starting_items.value),
             'race': self.multiworld.is_race,
+            'bosses_to_defeat': self.options.required_bosses.value,
+            'shuffle_structures': self.options.shuffle_structures.value,
+            'structure_compasses': self.options.structure_compasses.value,
+            'combat_difficulty': self.options.combat_difficulty.value,
+            'include_hard_advancements': self.options.include_hard_advancements.value,
+            'include_unreasonable_advancements': self.options.include_unreasonable_advancements.value,
+            'include_postgame_advancements': self.options.include_postgame_advancements.value,
         }
+
+    def generate_early(self: "MinecraftWorld") -> None:
+        re_gen_passthrough = getattr(self.multiworld, "re_gen_passthrough", {})
+        if re_gen_passthrough and self.game in re_gen_passthrough:
+            self.using_ut = True
+            self.passthrough = re_gen_passthrough["Minecraft"]
+            self.options.advancement_goal.value = self.passthrough["advancement_goal"]
+            self.options.egg_shards_required.value = self.passthrough["egg_shards_required"]
+            self.options.required_bosses.value = self.passthrough["bosses_to_defeat"]
+            self.options.shuffle_structures.value = self.passthrough["shuffle_structures"]
+            self.options.structure_compasses.value = self.passthrough["structure_compasses"]
+            self.options.combat_difficulty.value = self.passthrough["combat_difficulty"]
+            self.options.include_hard_advancements.value = self.passthrough["include_hard_advancements"]
+            self.options.include_unreasonable_advancements.value = self.passthrough["include_unreasonable_advancements"]
+            self.options.include_postgame_advancements.value = self.passthrough["include_postgame_advancements"]
+            self.options.death_link.value = self.passthrough["death_link"]
+        else:
+            self.using_ut = False
 
     def create_item(self, name: str) -> Item:
         item_class = ItemClassification.filler
@@ -223,6 +253,11 @@ class MinecraftWorld(World):
 
     def get_filler_item_name(self) -> str:
         return get_junk_item_names(self.random, 1)[0]
+
+    # For UT
+    @staticmethod
+    def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
+        return slot_data
 
 
 class MinecraftLocation(Location):
