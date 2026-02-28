@@ -316,9 +316,10 @@ class TestAdvancements(MCTestBase):
             ["Two by Two", False, [], ['Progressive Weapons']],
             ["Two by Two", False, [], ['Bucket']],
             ["Two by Two", False, [], ['Brush']],
+            ["Two by Two", False, [], ['Fishing Rod']],
             ["Two by Two", False, ['Progressive Tools', 'Progressive Tools'], ['Bucket', 'Progressive Tools']],
             ["Two by Two", False, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Progressive Tools', 'Progressive Tools', 'Progressive Weapons']],
-            ["Two by Two", True, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons', 'Brush']],
+            ["Two by Two", True, ['Progressive Resource Crafting', 'Progressive Tools', 'Flint and Steel', 'Bucket', 'Progressive Weapons', 'Brush', 'Fishing Rod']],
             ])
 
     def test_42023(self):
@@ -1712,3 +1713,10 @@ class TestAdvancements(MCTestBase):
                                           "Progressive Weapons", "Enchanting", "Silk Touch Book",
                                           "Progressive Tools", "Progressive Tools", "Progressive Tools"]],
             ])
+
+    def test_42136(self):
+        self.run_location_tests([
+            ["Mob Kabob", False, []],
+            ["Mob Kabob", False, [], ["Progressive Resource Crafting"]],
+            ["Mob Kabob", True, ["Progressive Resource Crafting"]]
+        ])
