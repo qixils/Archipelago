@@ -1,5 +1,6 @@
 from . import Constants
 from typing import TYPE_CHECKING
+from Options import PlandoConnection
 if TYPE_CHECKING:
     from . import MinecraftWorld
 
@@ -27,16 +28,17 @@ def shuffle_structures(self: "MinecraftWorld") -> None:
         else: 
             raise Exception(f"Invalid connection: {exit} => {struct} for player {player} ({multiworld.player_name[player]})")
 
+    if self.using_ut:
+        self.options.plando_connections.value.clear()
+        for exit, struct in self.passthrough["structures"].items():
+            exit_name = exit
+            struct_name = struct
+            self.options.plando_connections.value.append(PlandoConnection(exit_name, struct_name, "both"))
+
     # Connect plando structures first
     if self.options.plando_connections:
         for conn in self.options.plando_connections:
             set_pair(conn.entrance, conn.exit)
-
-    # if self.using_ut:
-    #     self.options.plando_connections.value.clear()
-    #     for structs, exits in self.passthrough[""].items():
-    #         struct_name = ""
-    #         exit_name = ""
 
     # The algorithm tries to place the most restrictive structures first. This algorithm always works on the
     # relatively small set of restrictions here, but does not work on all possible inputs with valid configurations. 

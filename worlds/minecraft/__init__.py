@@ -132,11 +132,11 @@ class MinecraftWorld(World):
     using_ut = bool
     passthrough = dict[str, Any]
     ut_can_gen_without_yaml = True
-    # tracker_world: ClassVar = ut_stuff.tracker_world
 
     def _get_mc_data(self) -> Dict[str, Any]:
         exits = [connection[0] for connection in Constants.region_info["default_connections"]]
         return {
+            # Mod data
             'world_seed': self.random.getrandbits(32),
             'seed_name': self.multiworld.seed_name,
             'player_name': self.player_name,
@@ -152,6 +152,8 @@ class MinecraftWorld(World):
             'death_link': bool(self.options.death_link.value),
             'starting_items': json.dumps(self.options.starting_items.value),
             'race': self.multiworld.is_race,
+
+            # Universal Tracker data
             'bosses_to_defeat': self.options.required_bosses.value,
             'shuffle_structures': self.options.shuffle_structures.value,
             'structure_compasses': self.options.structure_compasses.value,
