@@ -170,6 +170,7 @@ class MinecraftWorld(World):
             self.passthrough = re_gen_passthrough["Minecraft"]
             self.options.advancement_goal.value = self.passthrough["advancement_goal"]
             self.options.egg_shards_required.value = self.passthrough["egg_shards_required"]
+            self.options.egg_shards_available.value = self.passthrough["egg_shards_available"]
             self.options.required_bosses.value = self.passthrough["bosses_to_defeat"]
             self.options.shuffle_structures.value = self.passthrough["shuffle_structures"]
             self.options.structure_compasses.value = self.passthrough["structure_compasses"]
