@@ -129,8 +129,8 @@ class MinecraftWorld(World):
     item_name_to_id = Constants.item_name_to_id
     location_name_to_id = Constants.location_name_to_id
 
-    using_ut = bool
-    passthrough = dict[str, Any]
+    using_ut: bool
+    passthrough: dict[str, Any]
     ut_can_gen_without_yaml = True
 
     def _get_mc_data(self) -> Dict[str, Any]:
