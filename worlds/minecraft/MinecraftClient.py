@@ -55,6 +55,8 @@ logger = logging.getLogger("MinecraftClient")
 
 version_file_endpoint = "https://raw.githubusercontent.com/qixils/NeoForgeAP/refs/heads/main/versions/minecraft_versions.json"
 
+default_save_name = "Archipelago"
+
 class VersionsJson(TypedDict):
     version: str
     channel: str
@@ -103,14 +105,29 @@ def get_recent_items(options: 'MinecraftSettings') -> List:
         os.makedirs(options.server_directory)
     saves = []
     for directory in os.listdir(options.server_directory):
-        if directory.startswith("Archipelago-"):
-            save = os.path.join(options.server_directory, directory, "save.apmc")
-            description = "None"
-            with open(save, "r") as jsonfile:
-                save = json.load(jsonfile)
-                if 'description' in  save:
-                    description = save["description"]
-            saves.append((description, directory))
+        try:
+            if directory.startswith("Archipelago-"):
+                world_dir = os.path.join(options.server_directory, directory)
+
+                save = os.path.join(world_dir, "save.apmc")
+                if not os.path.isfile(save):
+                    continue
+
+                metadata_path = os.path.join(world_dir, "metadata.json")
+                if not os.path.exists(metadata_path):
+                    # it doesn't really matter if the metadata exists...
+                    # *except* it suggests the save.apmc is using the old broken format
+                    # so we ignore this entry to force the user to re-import their apmc
+                    continue
+
+                description = default_save_name
+                with open(metadata_path, "r") as jsonfile:
+                    metadata = json.load(jsonfile)
+                    if 'description' in metadata:
+                        description = metadata["description"]
+                saves.append((description, directory))
+        except:
+            pass
     return saves
 
 
@@ -281,8 +298,8 @@ class MinecraftClient(MDApp):
         self.apmc_path = path
         if self.apmc_path is None:
             self.apmc_path = Utils.open_filename(title="Choose AP Minecraft file",
-                                filetypes=(("Archipelago Minecraft", "*.apmc"),))
-        if self.apmc_path is None or self.apmc_path == "" or os.path.isfile(self.apmc_path) is False:
+                                filetypes=(("Archipelago Minecraft", ["*.apmc"]),))
+        if self.apmc_path is None or self.apmc_path == "" or not os.path.isfile(self.apmc_path):
             return
 
         # APContainer makes zips
@@ -361,12 +378,11 @@ class MinecraftClient(MDApp):
     def copy_apmc(self, context: dict[str, Any], *arg):
         if self.apmc_path is None:
             return
-        apmc_name = os.path.basename(self.apmc_path)
         neo_dir = context['neoforge_dir']
         apdata_dir = os.path.join(neo_dir, 'APData')
         os.makedirs(apdata_dir, exist_ok=True)
 
-        neo_apmc = os.path.join(apdata_dir, apmc_name)
+        neo_apmc = os.path.join(apdata_dir, 'save.apmc')
         shutil.copy2(self.apmc_path, neo_apmc)
 
     def server_thread(self, context: dict[str, Any]):
@@ -379,10 +395,19 @@ class MinecraftClient(MDApp):
         world_dir = os.path.join(options.server_directory, world_name)
         if not os.path.isdir(world_dir):
             os.makedirs(world_dir)
+
         save_path = os.path.join(world_dir, "save.apmc")
-        if not os.path.isfile(save_path):
-            with open(save_path, "w") as file:
-                json.dump(self.apmc, file)
+        # we might consider skipping this if save_path exists
+        # but for now we want to repair broken installs
+        if self.apmc_path != save_path:
+            shutil.copy2(self.apmc_path, save_path)
+
+        metadata_path = os.path.join(world_dir, "metadata.json")
+        if not os.path.isfile(metadata_path):
+            metadata = {"description": "Archipelago"}
+            with open(metadata_path, "w") as meta_file:
+                json.dump(metadata, meta_file)
+
         os.environ["JAVA_OPTS"] = ""
         neo_run = context['neoforge_run_args']
         neo_dir = context['neoforge_dir']
@@ -535,7 +560,7 @@ class RecentItem(MDBoxLayout):
         options = get_options()
         self.name = name
         try:
-            with open(os.path.join(options.server_directory, self.path, "save.apmc"), "r+") as file:
+            with open(os.path.join(options.server_directory, self.path, "metadata.json"), "r+") as file:
                 data = json.load(file)
                 data["description"] = name
                 file.seek(0)
