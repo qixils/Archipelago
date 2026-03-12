@@ -2,7 +2,6 @@
 	"all_items": [
 		"Archery",
 		"Progressive Resource Crafting",
-		"Resource Blocks",
 		"Brewing",
 		"Enchanting",
 		"Bucket",
@@ -57,7 +56,6 @@
 	"progression_items": [
 		"Archery",
 		"Progressive Resource Crafting",
-		"Resource Blocks",
 		"Brewing",
 		"Enchanting",
 		"Bucket",
@@ -94,7 +92,8 @@
 	"useful_items": [
 		"Sharpness III Book",
 		"Looting III Book",
-		"Infinity Book"
+		"Infinity Book",
+		"Shulker Box"
 	],
 	"trap_items": [
 		"Bee Trap"
@@ -124,6 +123,7 @@
 	    "Infinity Book": 1,
 	    "3 Ender Pearls": 4,
 	    "Saddle": 1,
+	    "Shulker Box": 4,
 	    "Spyglass": 1,
 	    "Lead": 1,
 	    "Brush": 1

@@ -8,7 +8,7 @@ class AdvancementGoal(Range):
     """Number of advancements required to spawn bosses."""
     display_name = "Advancement Goal"
     range_start = 0
-    range_end = 136
+    range_end = 137
     default = 40
 
 

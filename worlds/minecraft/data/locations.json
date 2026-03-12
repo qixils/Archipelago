@@ -135,7 +135,8 @@
         "Over-Overkill",
         "Revaulting",
         "Stay Hydrated!",
-        "Heart Transplanter"
+        "Heart Transplanter",
+        "Mob Kabob"
     ],
     "locations_by_region": {
         "Overworld": [
@@ -215,7 +216,8 @@
             "Crafters Crafting Crafters",
             "Lighten Up",
             "Stay Hydrated!",
-            "Heart Transplanter"
+            "Heart Transplanter",
+            "Mob Kabob"
         ],
         "The Nether": [
             "Hot Tourist Destinations",
