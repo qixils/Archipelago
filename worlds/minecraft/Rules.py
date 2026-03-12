@@ -326,6 +326,7 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     revaulting = self.get_location("Revaulting")
     stay_hydrated = self.get_location("Stay Hydrated!")
     heart_transplanter = self.get_location("Heart Transplanter")
+    mob_kabob = self.get_location("Mob Kabob")
 
     self.set_rule(defeat_ender_dragon, kill_dragon)
     self.set_rule(defeat_wither, kill_wither)
@@ -350,7 +351,7 @@ def set_main_rules(self: "MinecraftWorld") -> None:
                   & beacon & beat_raid)
     self.set_rule(bullseye, bow & iron_tools)
     self.set_rule(spooky_scary_skeleton, loot_fortress)
-    self.set_rule(two_by_two, brush & monument & bucket & village)
+    self.set_rule(two_by_two, brush & monument & bucket & village & fishing_rod)
     self.set_rule(two_birds_one_arrow, crossbow & can_enchant)
     self.set_rule(whos_the_pillager_now, crossbow)
     self.set_rule(getting_an_upgrade, stone_tools)
@@ -443,6 +444,7 @@ def set_main_rules(self: "MinecraftWorld") -> None:
     self.set_rule(revaulting, ominous_vaults)
     self.set_rule(stay_hydrated, nether | piglin_bartering)
     self.set_rule(heart_transplanter, can_adventure & (silk_touch | (combat & resource_blocks)))
+    self.set_rule(mob_kabob, furnace)
 
 
 def set_special_rules(self: "MinecraftWorld") -> None:
