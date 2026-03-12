@@ -336,9 +336,10 @@ def get_rules_lookup(world, player: int):
             "Spooky Scary Skeleton": lambda state: basic_combat(world, state, player),
             "Two by Two": lambda state: can_excavate(world, state, player)
                                         and state.can_reach_region("Ocean Monument", player)  # Sniffers
-                                        and state.has("Bucket", player)
-                                        and state.can_reach_region("Village", player)  # Axolotls, Cats
-                                        and state.has("Brush", player),
+                                        and state.has("Bucket", player)  # Axolotls
+                                        and state.can_reach_region("Village", player)  # Cats
+                                        and state.has("Brush", player)
+                                        and state.has("Fishing Rod", player),  # Pufferfish for Nautiluses
             "Two Birds, One Arrow": lambda state: craft_crossbow(world, state, player)
                                                   and can_enchant(world, state, player),
             "Who's the Pillager Now?": lambda state: craft_crossbow(world, state, player),
@@ -635,7 +636,8 @@ def get_rules_lookup(world, player: int):
                                                   and can_use_anvil(world, state, player)
                                                   and can_enchant(world, state, player)
                                                  )
-                                                )
+                                                ),
+            "Mob Kabob": lambda state: state.has("Progressive Resource Crafting", player)
         }
     }
     return rules_lookup
