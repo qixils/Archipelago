@@ -53,6 +53,7 @@ or after completing both conditions.
 * Campfire
     * Campfire
     * Soul Campfire
+* Saddle
 * Spyglass
 * Lead
 * Brush
@@ -114,4 +115,7 @@ or after completing both conditions.
         * Anvil
         * Emerald
         * Emerald Block
+        * Copper Ingot
         * Copper Block
+        * Resin Clump
+        * Resin Block
