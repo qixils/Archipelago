@@ -292,7 +292,7 @@ class MinecraftClient(MDApp):
         if self.apmc_path:
             self.open_apmc(path=self.apmc_path)
 
-    def read_possible_b64(data: str) -> dict[str, Any]:
+    def read_possible_b64(self, data: str) -> dict[str, Any]:
         if data.startswith("e"):
             return json.loads(b64decode(data))
         elif data.startswith("{"):
