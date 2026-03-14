@@ -292,6 +292,12 @@ class MinecraftClient(MDApp):
         if self.apmc_path:
             self.open_apmc(path=self.apmc_path)
 
+    def read_possible_b64(data: str) -> dict[str, Any]:
+        if data.startswith("e"):
+            return json.loads(b64decode(data))
+        elif data.startswith("{"):
+            return json.loads(data)
+
     def open_apmc(self, path=None):
         options = get_options()
         logger.info(self.mod_info)
@@ -306,38 +312,36 @@ class MinecraftClient(MDApp):
         if zipfile.is_zipfile(self.apmc_path):
             with zipfile.ZipFile(self.apmc_path, 'r') as zf:
                 for entry in zf.infolist():
-                    if entry.filename.endswith(".apmc"):
+                    if entry.filename.endswith(".apmc") or entry.filename.endswith(".apmcmeta"):
                         embedded_apmc = entry.filename
                         break
+                if not embedded_apmc:
+                    return
                 with zf.open(embedded_apmc, 'r' ) as f:
                     data = f.read()
                     data = data.decode('utf-8')
-                    if data.startswith("e"):
-                        apmc = json.loads(b64decode(data))
-                    elif data.startswith("{"):
-                        apmc = json.loads(data)
+                    apmc = self.read_possible_b64(data)
         else:
             with open(self.apmc_path, 'r') as f:
                 data = f.read()
-                if data.startswith("e"):
-                    apmc = json.loads(b64decode(data))
-                elif data.startswith("{"):
-                    apmc = json.loads(data)
+                apmc = self.read_possible_b64(data)
 
-        if apmc is not None:
-            try:
-                self.apmc = apmc
-                # TODO(cang) Not sure if this is supposed to handle multiple valid MC versions
-                self.version = next(filter(lambda entry: entry['data'] == self.apmc["client_version"],
-                                           self.minecraft_versions[options.release_channel]))
-                self.server_window.status.text = f"Initializing {self.version['minecraft']}"
+        if apmc is None:
+            return
 
-                self.window_manager.current = "Server"
-                self.start_server()
-            except KeyError:
-                logger.error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
-                self.log_error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
-                self.apmc_path = None
+        try:
+            self.apmc = apmc
+            # TODO(cang) Not sure if this is supposed to handle multiple valid MC versions
+            self.version = next(filter(lambda entry: entry['data'] == self.apmc["client_version"],
+                                        self.minecraft_versions[options.release_channel]))
+            self.server_window.status.text = f"Initializing {self.version['minecraft']}"
+
+            self.window_manager.current = "Server"
+            self.start_server()
+        except KeyError:
+            logger.error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
+            self.log_error(f"unable to find version {self.apmc['client_version']} on {options.release_channel}")
+            self.apmc_path = None
 
     def update_progress(self, value: float, content: str):
         self.server_window.update_progress(value, content)
