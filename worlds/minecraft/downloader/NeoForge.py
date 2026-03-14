@@ -98,10 +98,16 @@ class DownloadNeoForge(StepsStep):
         os.unlink(self.installer_jar)
         os.unlink(self.installer_jar + '.version')
 
+        # we don't actually use these ourselves but they're nice to have
+        # (although they are not very well tested)
         with open(bat_file, 'w') as f:
-            f.write(f"@echo off\nstart {' '.join(self.windows_run)} %* > log.txt 2> errorlog.txt")
+            windows_run = list(self.windows_run)
+            windows_run[0] = f'&"{windows_run[0]}"'
+            f.write(f"@echo off\nstart {' '.join(windows_run)} %* > log.txt 2> errorlog.txt")
         
         with open(sh_file, 'w') as f:
+            unix_run = list(self.unix_run)
+            unix_run[0] = unix_run[0].replace(' ', '\\ ')
             f.write(f"#!/bin/bash\nexec {' '.join(self.unix_run)} \"$@\" > log.txt 2> errorlog.txt")
 
         with open(self.version_path, 'w') as f:
