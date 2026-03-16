@@ -2,6 +2,7 @@ from typing import ClassVar
 
 from BaseClasses import CollectionState, ItemClassification
 from test.bases import WorldTestBase
+
 from .. import MinecraftOptions, MinecraftWorld
 
 

@@ -1,4 +1,4 @@
-from . import MCTestBase
+from ..test.bases import MCTestBase
 
 
 class TestEntrances(MCTestBase): 
