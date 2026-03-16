@@ -33,7 +33,7 @@ class MCTestBase(WorldTestBase):
         new_items.remove(missing_item)
         items = self._create_items(new_items, 1)
         return self.get_state(items)
-# LTTP Code Minecraft was using for Unit Tests. Find a way to re implement properly (Code Author: qwint)
+# LTTP Code Minecraft was using for Unit Tests. Find a way to re implement properly (Code Author: berserker55)
     _state_cache = {}
     def get_state(self, items):
         if (self.multiworld, tuple(items)) in self._state_cache:
