@@ -1,4 +1,4 @@
-from . import MCTestBase
+from ..test.bases import MCTestBase
 from ..Constants import region_info
 from .. import Options
 
