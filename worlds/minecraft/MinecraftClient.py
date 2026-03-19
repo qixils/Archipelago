@@ -309,24 +309,33 @@ class MinecraftClient(MDApp):
             return
 
         # APContainer makes zips
-        if zipfile.is_zipfile(self.apmc_path):
-            with zipfile.ZipFile(self.apmc_path, 'r') as zf:
-                for entry in zf.infolist():
-                    if entry.filename.endswith(".apmc") or entry.filename.endswith(".apmcmeta"):
-                        embedded_apmc = entry.filename
-                        break
-                if not embedded_apmc:
-                    return
-                with zf.open(embedded_apmc, 'r' ) as f:
+        try:
+            if zipfile.is_zipfile(self.apmc_path):
+                with zipfile.ZipFile(self.apmc_path, 'r') as zf:
+                    embedded_apmc = None
+                    for entry in zf.infolist():
+                        if entry.filename.endswith(".apmc") or entry.filename.endswith(".apmcmeta"):
+                            embedded_apmc = entry.filename
+                            break
+                    if embedded_apmc:
+                        with zf.open(embedded_apmc, 'r' ) as f:
+                            data = f.read()
+                            data = data.decode('utf-8')
+                            apmc = self.read_possible_b64(data)
+                    else:
+                        logger.error(f"unable to find metadata file in zip")
+            else:
+                with open(self.apmc_path, 'r') as f:
                     data = f.read()
-                    data = data.decode('utf-8')
                     apmc = self.read_possible_b64(data)
-        else:
-            with open(self.apmc_path, 'r') as f:
-                data = f.read()
-                apmc = self.read_possible_b64(data)
+        except Exception as e:
+            logger.error("failed to load apmc file", exc_info=e)
 
         if apmc is None:
+            info_dialog("Invalid APMC", content="""
+            An error occurred while parsing the APMC.
+            Please check the logs.
+            """)
             return
 
         try:
