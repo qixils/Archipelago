@@ -93,6 +93,10 @@ class SendDefeatedMobs(Toggle):
     """Send killed mobs to other Minecraft worlds which have this option enabled."""
     display_name = "Send Defeated Mobs"
 
+class ImmediateRespawn(DefaultOnToggle):
+    """Choose whether to respawn immediately on death, or to be put into the game over screen."""
+    display_name = "Immediate Respawn"
+
 
 class StartingItems(OptionList):
     """Start with these items. Each entry should be of this format: {item: "item_name", amount: #}
@@ -139,5 +143,6 @@ class MinecraftOptions(PerGameCommonOptions):
     include_postgame_advancements: PostgameAdvancements
     bee_traps: BeeTraps
     send_defeated_mobs: SendDefeatedMobs
+    immediate_respawn: ImmediateRespawn
     death_link: DeathLink
     starting_items: StartingItems
