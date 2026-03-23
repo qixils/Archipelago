@@ -3,7 +3,7 @@ import shutil
 import tempfile
 
 from . import StepsStep, SyncStep
-from .Utilities import DownloadStep, FetchStep, jre_paths
+from .Utilities import DownloadStep, FetchStep, jre_path_of
 from Utils import is_windows, is_linux
 import os
 import zipfile
@@ -55,7 +55,7 @@ class DownloadJava(StepsStep):
     def __init__(self, to: str, version: int):
         self.to = to
         self.version = version
-        self.outpath = os.path.join(to, "java", jre_paths[self.version])
+        self.outpath = os.path.join(to, "java", jre_path_of(self.version))
         self.zip_path = os.path.join(self.outpath, "jre.zip")
         self.logger = logging.getLogger("MinecraftClient")
         super().__init__(
@@ -134,7 +134,7 @@ class DownloadJava(StepsStep):
         os.remove(self.zip_path)
 
 def get_java_path(to: str, version: int) -> str:
-    jre = jre_paths[version]
+    jre = jre_path_of(version)
 
     bin = "javaw.exe" if is_windows else "java" if is_linux else None
     if not bin:

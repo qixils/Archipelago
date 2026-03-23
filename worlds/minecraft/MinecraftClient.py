@@ -512,9 +512,12 @@ class MinecraftClient(MDApp):
 def stream_server_output(pipe, queue, process):
     def queuer():
         while process.poll() is None:
-            text = pipe.readline().rstrip().expandtabs()
-            if text:
-                queue.put_nowait(text)
+            try:
+                text = pipe.readline().rstrip().expandtabs()
+                if text:
+                    queue.put_nowait(text)
+            except:
+                pass
 
     thread = threading.Thread(target=queuer, name="Minecraft Output Queue", daemon=True)
     thread.start()

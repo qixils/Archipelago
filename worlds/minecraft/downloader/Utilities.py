@@ -12,10 +12,8 @@ from kivy.network.urlrequest import UrlRequest, UrlRequestRequests
 ua = "qixils/minecraft-crowdcontrol/1.0.0"
 ua_header = {"User-Agent": ua}
 
-jre_paths: dict[int, str] = {
-    8: "jdk-8",
-    21: "jdk-21",
-}
+def jre_path_of(version: int) -> str:
+    return f"jdk-{version}"
 
 # TODO: headers
 # TODO: redirects

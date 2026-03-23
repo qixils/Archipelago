@@ -8,6 +8,56 @@ import Utils
 import os
 import subprocess
 
+class SemVer:
+    def __init__(self, value: str):
+        pre_suffix = value.split('-', 1)[0]
+        slot_split = pre_suffix.split('.')
+        if len(slot_split) > 3:
+            # 26+ syntax (neoforge has A.B.C.D now)
+            self.major = int(slot_split[0])
+            self.minor = int(slot_split[1])
+            self.patch = int(slot_split[2])
+        else:
+            self.major = 1
+            self.minor = int(slot_split[0])
+            self.patch = int(slot_split[1])
+    
+    def matches(self, other: str):
+        try:
+            other_semver = SemVer(other)
+            return self.major == other_semver.major and self.minor == other_semver.minor and self.patch == other_semver.patch
+        except:
+            return False
+
+# vanilla version_manifest_v2.json
+
+class VanillaLatest(TypedDict):
+    release: str
+    snapshot: str
+
+class VanillaVersion(TypedDict):
+    id: str
+    type: str
+    url: str
+    time: str
+    releaseTime: str
+    sha1: str
+
+class VanillaVersions(TypedDict):
+    latest: VanillaLatest
+    versions: list[VanillaVersion]
+
+# vanilla x.y.z.json
+
+class VanillaJavaVersion(TypedDict):
+    component: str
+    majorVersion: int
+
+class VanillaMetadata(TypedDict):
+    javaVersion: VanillaJavaVersion
+
+# neoforge maven
+
 class NeoVersions(TypedDict):
     isSnapshot: bool
     versions: list[str]
@@ -15,19 +65,27 @@ class NeoVersions(TypedDict):
 class DownloadNeoForge(StepsStep):
     def __init__(self, to: str,
                  eula_popup: Callable,
-                 force_version: str | None = None,
+                 force_version: str,
                  heap: str = "2048M"):
-        self.name = f"Downloading {force_version if force_version else 'latest'} NeoForge..."
 
+        self.mc_version = force_version
+        old_version_prefix = "1."
+        if force_version.startswith(old_version_prefix):
+            force_version = force_version[len(old_version_prefix):]
+        self.force_version = force_version
+
+        self.name = f"Downloading {force_version} NeoForge..."
         self.to = to
-        self.force_version = (force_version.split(".", 1)[1] + ".") if force_version else None
         self.heap = heap
         self.installer_jar = os.path.join(to, f"neoforge-installer.jar")
         self.logger = logging.getLogger("MinecraftClient")
 
         super().__init__(
             "Installing Neo Forge",
-            SyncStep(lambda *args: print(f"Downloading NeoForge index")),
+            FetchStep("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"),
+            SyncStep(self._process_vanilla_index),
+            FetchStep(),
+            SyncStep(self._process_vanilla_metadata),
             FetchStep("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge"),
             SyncStep(self._process_versions),
             ConfirmEula(eula_popup),
@@ -37,21 +95,43 @@ class DownloadNeoForge(StepsStep):
             SyncStep(self._process_cleanup),
         )
     
-    def _process_versions(self,context: dict[str, Any], neo_versions: NeoVersions) -> str:
+    def _process_vanilla_index(self, context: dict[str, Any], vanilla_versions: VanillaVersions) -> str:
+        metadata = next(
+            (ver for ver in vanilla_versions['versions'] if ver['id'] == self.mc_version),
+            None
+        )
+
+        if not metadata:
+            raise Exception('No suitable vanilla version found')
+
+        return metadata['url']
+    
+    def _process_vanilla_metadata(self, context: dict[str, Any], vanilla_metadata: VanillaMetadata):
+        self.java_version = vanilla_metadata['javaVersion']['majorVersion']
+        self.java_component = vanilla_metadata['javaVersion']['component']
+    
+    def _process_versions(self, context: dict[str, Any], neo_versions: NeoVersions) -> str:
+        force_semver = SemVer(self.force_version)
+
         self.neo_latest = next(
-            (ver for ver in reversed(neo_versions["versions"]) if self.force_version is None or ver.startswith(self.force_version)),
+            (ver for ver in reversed(neo_versions["versions"]) if force_semver.matches(ver)),
             None
         )
         
         if not self.neo_latest:
             raise Exception("No suitable NeoForge version found")
 
-        self.minecraft = f"1.{'.'.join(self.neo_latest.split('.', 2)[:2])}"
+        version_split = self.neo_latest.split('.')
+        is_old_version = version_split[0] == "1"
+        if is_old_version:
+            self.minecraft = f"1.{'.'.join(version_split[:2])}"
+        else:
+            self.minecraft = f"{'.'.join(version_split[:3])}"
 
         self.root = os.path.join(self.to, f"NeoForge {self.minecraft}")
         os.makedirs(self.root, exist_ok=True)
 
-        self.java_path = get_java_path(self.to, 21)
+        self.java_path = get_java_path(self.to, self.java_version)
         self.java_path_relative = os.path.relpath(self.java_path, self.root)
         self.logger.info(f"Using Java at {self.java_path}")
 
@@ -83,7 +163,7 @@ class DownloadNeoForge(StepsStep):
             return
         
         self.logger.info(f"Running NeoForge {self.neo_latest} installer")
-        java_path = get_java_path(self.to, 21)
+        java_path = get_java_path(self.to, self.java_version)
         return (java_path, "-jar", self.installer_jar, "--installServer"), {"cwd": self.root, "stderr": subprocess.DEVNULL, "stdout": subprocess.DEVNULL}
 
     def _process_cleanup(self, context: dict[str, Any], req):
