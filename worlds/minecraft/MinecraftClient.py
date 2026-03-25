@@ -309,6 +309,7 @@ class MinecraftClient(MDApp):
             return
 
         # APContainer makes zips
+        apmc = None
         try:
             if zipfile.is_zipfile(self.apmc_path):
                 with zipfile.ZipFile(self.apmc_path, 'r') as zf:
