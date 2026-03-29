@@ -152,6 +152,7 @@ class MinecraftWorld(World):
             'death_link': bool(self.options.death_link.value),
             'starting_items': json.dumps(self.options.starting_items.value),
             'race': self.multiworld.is_race,
+            'immediate_respawn': bool(self.options.immediate_respawn.value),
 
             # Universal Tracker data
             'bosses_to_defeat': self.options.required_bosses.value,
@@ -179,6 +180,7 @@ class MinecraftWorld(World):
             self.options.include_unreasonable_advancements.value = self.passthrough["include_unreasonable_advancements"]
             self.options.include_postgame_advancements.value = self.passthrough["include_postgame_advancements"]
             self.options.death_link.value = self.passthrough["death_link"]
+            self.options.immediate_respawn.value = self.passthrough["immediate_respawn"]
         else:
             self.using_ut = False
 
