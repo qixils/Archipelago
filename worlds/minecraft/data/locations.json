@@ -136,7 +136,8 @@
         "Revaulting",
         "Stay Hydrated!",
         "Heart Transplanter",
-        "Mob Kabob"
+        "Mob Kabob",
+        "Uh Oh"
     ],
     "locations_by_region": {
         "Overworld": [
@@ -165,12 +166,10 @@
             "Hired Help",
             "Sweet Dreams",
             "Adventure",
-            "Monsters Hunted",
             "Enchanter",
             "Eye Spy",
             "Postmortal",
             "Monster Hunter",
-            "Adventuring Time",
             "A Seedy Place",
             "Husbandry",
             "Country Lode, Take Me Home",
@@ -193,37 +192,24 @@
             "Librarian",
             "Wax On",
             "Wax Off",
-            "The Cutest Predator",
-            "The Healing Power of Friendship",
             "Surge Protector",
-            "Light as a Rabbit",
             "Glow and Behold!",
-            "Whatever Floats Your Goat!",
             "Caves & Cliffs",
-            "Sound of Music",
             "Birthday Song",
-            "Bukkit Bukkit",
-            "When the Squad Hops into Town",
             "You've Got a Friend in Me",
             "Crafting a New Look",
             "Smithing with Style",
             "Respecting the Remnants",
             "Careful Restoration",
-            "Isn't It Scute?",
-            "Shear Brilliance",
-            "Good as New",
-            "The Whole Pack",
             "Crafters Crafting Crafters",
             "Lighten Up",
             "Stay Hydrated!",
-            "Heart Transplanter",
             "Mob Kabob"
         ],
         "The Nether": [
             "Hot Tourist Destinations",
             "This Boat Has Legs",
             "Nether",
-            "Two by Two",
             "We Need to Go Deeper",
             "Not Quite \"Nine\" Lives",
             "Return to Sender",
@@ -232,7 +218,6 @@
             "Uneasy Alliance",
             "Is It a Balloon?",
             "Feels Like Home",
-            "With Our Powers Combined!",
             "The Power of Books"
         ],
         "The End": [
@@ -289,9 +274,7 @@
             "It Spreads",
             "Sneak 100"
         ],
-        "Trail Ruins": [
-            "Is It a Bird?"
-        ],
+        "Trail Ruins": [],
         "Trial Chambers": [
             "Minecraft: Trial(s) Edition",
             "Under Lock and Key",
@@ -299,6 +282,28 @@
             "Who Needs Rockets?",
             "Over-Overkill",
             "Revaulting"
+        ],
+        "Sulfur Caves": [
+            "Uh Oh"
+        ],
+        "Unvisited Biomes": [
+            "Two by Two",
+            "Monsters Hunted",
+            "Adventuring Time",
+            "The Cutest Predator",
+            "Is It a Bird?",
+            "The Healing Power of Friendship",
+            "Light as a Rabbit",
+            "Whatever Floats Your Goat!",
+            "Sound of Music",
+            "Bukkit Bukkit",
+            "When the Squad Hops into Town",
+            "With Our Powers Combined!",
+            "Isn't It Scute?",
+            "Shear Brilliance",
+            "Good as New",
+            "The Whole Pack",
+            "Heart Transplanter"
         ]
     }
 }   

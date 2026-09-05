@@ -276,7 +276,11 @@ def get_rules_lookup(world, player: int):
             "Ruins": lambda state: can_adventure(world, state, player)
                                    and has_structure_compass(world, state, "Ruins", player),
             "Underground": lambda state: can_adventure(world, state, player) and state.has("Progressive Tools", player)
-                                         and has_structure_compass(world, state, "Underground", player)
+                                         and has_structure_compass(world, state, "Underground", player),
+            "Sulfur Spring": lambda state: can_adventure(world, state, player) and state.has("Progressive Tools", player)
+                                           and has_structure_compass(world, state, "Sulfur Spring", player),
+            "Biome Discovery": lambda state: can_adventure(world, state, player)
+                                             and has_structure_compass(world, state, "Biome Discovery", player),
         },
         "locations": {
             "Ender Dragon": lambda state: can_respawn_ender_dragon(world, state, player)
@@ -314,6 +318,7 @@ def get_rules_lookup(world, player: int):
             "The Next Generation": lambda state: can_respawn_ender_dragon(world, state, player)
                                                  and can_kill_ender_dragon(world, state, player),
             "Fishy Business": lambda state: state.has("Fishing Rod", player),
+            "Hot Tourist Destinations": lambda state: has_structure_compass(world, state, "Biome Discovery", player),
             "This Boat Has Legs": lambda state: has_iron_ingots(world, state, player)
                                                 and state.has("Saddle", player)
                                                 and state.has("Fishing Rod", player),
@@ -335,6 +340,7 @@ def get_rules_lookup(world, player: int):
                                        and has_iron_ingots(world, state, player),
             "Spooky Scary Skeleton": lambda state: basic_combat(world, state, player),
             "Two by Two": lambda state: can_excavate(world, state, player)
+                                        and state.can_reach_region("The Nether", player)  # Hoglins
                                         and state.can_reach_region("Ocean Monument", player)  # Sniffers
                                         and state.has("Bucket", player)  # Axolotls
                                         and state.can_reach_region("Village", player)  # Cats
@@ -397,11 +403,7 @@ def get_rules_lookup(world, player: int):
             "Postmortal": lambda state: complete_raid(world, state, player),
             "Adventuring Time": lambda state: can_adventure(world, state, player)
                                               and has_iron_ingots(world, state, player)
-                                              and state.has("Progressive Tools", player, 2)
-                                              and state.can_reach_region('Ocean Monument', player)  # Most Oceans
-                                              and state.can_reach_region('Woodland Mansion', player)  # Dark Forest
-                                              and state.can_reach_region('Ancient City', player)  # Deep Dark
-                                              and state.can_reach_region('Trail Ruins', player),  # Jungle, Birch Forest, Old Growth Birch Forest, all Taiga variants
+                                              and state.has("Progressive Tools", player, 2),
             "Hero of the Village": lambda state: complete_raid(world, state, player),
             "Hidden in the Depths": lambda state: can_brew_potions(world, state, player)
                                                   and state.has("Bed", player)
@@ -529,6 +531,7 @@ def get_rules_lookup(world, player: int):
                                                            and state.has("Bucket", player)
                                                            and has_iron_ingots(world, state, player),
             "With Our Powers Combined!": lambda state: can_adventure(world, state, player)
+                                                       and state.can_reach_region("The Nether", player)
                                                        and state.has("Lead", player)
                                                        and state.has("Bucket", player)
                                                        and has_iron_ingots(world, state, player),
@@ -637,7 +640,10 @@ def get_rules_lookup(world, player: int):
                                                   and can_enchant(world, state, player)
                                                  )
                                                 ),
-            "Mob Kabob": lambda state: state.has("Progressive Resource Crafting", player)
+            "Mob Kabob": lambda state: state.has("Progressive Resource Crafting", player),
+            "Uh Oh": lambda state: can_adventure(world, state, player)
+                                   and basic_combat(world, state, player)
+                                   and state.has("Progressive Tools", player)
         }
     }
     return rules_lookup

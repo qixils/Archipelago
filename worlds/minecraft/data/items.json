@@ -51,7 +51,9 @@
 		"Structure Compass (Woodland Mansion)",
 		"Structure Compass (Ancient City)",
 		"Structure Compass (Trail Ruins)",
-		"Structure Compass (Trial Chambers)"
+		"Structure Compass (Trial Chambers)",
+		"Structure Compass (Sulfur Caves)",
+		"Structure Compass (Unvisited Biomes)"
 	],
 	"progression_items": [
 		"Archery",
@@ -87,7 +89,9 @@
 		"Structure Compass (Woodland Mansion)",
 		"Structure Compass (Ancient City)",
 		"Structure Compass (Trail Ruins)",
-		"Structure Compass (Trial Chambers)"
+		"Structure Compass (Trial Chambers)",
+		"Structure Compass (Sulfur Caves)",
+		"Structure Compass (Unvisited Biomes)"
 	],
 	"useful_items": [
 		"Sharpness III Book",
