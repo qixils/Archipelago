@@ -6,7 +6,7 @@
     Button:
         text: '[b]' +root.name + '[/b]\n[color=bbb]' + root.path + '[/color]'
         halign: 'left'
-        padding: 10, 0
+        padding: dp(10), dp(0)
         markup: True
         size: self.texture_size
         id: load
@@ -16,8 +16,8 @@
     Button:
         id: rename
         size_hint: None, 1
-        width: 50
-        padding: 20, 0
+        width: dp(50)
+        padding: dp(20), dp(0))
         on_press: root.rename()
         Image:
             id: rename_icon
@@ -30,8 +30,8 @@
     Button:
         id: delete
         size_hint: None, 1
-        width: 50
-        padding: 20, 0
+        width: dp(50)
+        padding: dp(20), dp(0)
         on_press: root.delete()
         Image:
             id: delete_icon
@@ -44,8 +44,8 @@
 <TextOption>
     rows: 1
     size_hint: 1, None
-    height: 30
-    spacing: 10
+    height: dp(30)
+    spacing: dp(10)
     Label:
         size_hint: None, 1
         width: dp(150)
@@ -61,8 +61,8 @@
 <DropdownOption>
     rows: 1
     size_hint: 1, None
-    height: 30
-    spacing: 10
+    height: dp(30)
+    spacing: dp(10)
     Label:
         size_hint: None, 1
         width: dp(150)
@@ -74,7 +74,7 @@
         text: root.value
         values: root.options
         size_hint: None, None
-        height: 30
+        height: dp(30)
         width: dp(200)
         on_text:
             root.value = self.text
@@ -123,10 +123,10 @@
 
         GridLayout:
             rows: 1
-            spacing: 10
-            padding: 10, 0
+            spacing: dp(10)
+            padding: dp(10), dp(0)
             size_hint: 1, None
-            height: 40
+            height: dp(40)
             Button:
                 id: confirm
                 text: root.confirm_text
@@ -144,9 +144,9 @@
     size_hint: .5, .5
     GridLayout:
         cols: 1
-        padding: 10
+        padding: dp(10)
         BoxLayout:
-            padding: 10
+            padding: dp(10)
             orientation: 'vertical'
             id: content
             Label:
@@ -156,10 +156,10 @@
 
         GridLayout:
             rows: 1
-            spacing: 10
-            padding: 10, 0
+            spacing: dp(10)
+            padding: dp(10), dp(0)
             size_hint: 1, None
-            height: 40
+            height: dp(40)
             Button:
                 text: root.button_text
                 background_color: 0, 1, 0, 1
@@ -173,7 +173,7 @@
 
 <LogLabel@Label>:
     markup: True
-    padding: 5,0
+    padding: dp(5),dp(0)
     size_hint_y: None
     text_size: self.width, None
     height: self.texture_size[1]
@@ -210,7 +210,7 @@
         Label:
             id: status
             size_hint: 1, None
-            height: 50
+            height: dp(50)
             text: "...Server Starting..."
             font_size: dp(25)
 
@@ -232,20 +232,20 @@
 <WelcomeWindow>:
     id: 'welcome'
     name: "Welcome"
-    padding: 10, 5, 10, 10
+    padding: dp(10), dp(5), dp(10), dp(10)
     TabbedPanel:
         do_default_tab: False
         TabbedPanelItem:
             text: 'Games'
-            padding: 10
+            padding: dp(10)
             GridLayout:
                 cols: 1
-                padding: 10
+                padding: dp(10)
                 GridLayout:
                     rows: 1
                     orientation: 'rl-tb'
                     size_hint: 1, None
-                    height: 30
+                    height: dp(30)
                     Button:
                         text: 'Open APMC File'
                         padding: 10, 5
@@ -255,16 +255,16 @@
 
                 Separator:
                     color: .5, .5, 1
-                    thickness: 3
-                    margin: 5
+                    thickness: dp(3)
+                    margin: dp(5)
 
                 ScrollView:
                     do_scroll_x: False
                     effect_cls: 'ScrollEffect'
                     GridLayout:
                         cols: 1
-                        spacing: 10
-                        padding: 0, 5
+                        spacing: dp(10)
+                        padding: dp(0), dp(5)
                         size_hint_y: None
                         height: self.minimum_height
                         id: saves
@@ -275,17 +275,17 @@
                 id: option_layout
                 size_hint: 1, None
                 height: self.minimum_height
-                padding: 10
-                spacing: 10
+                padding: dp(10)
+                spacing: dp(10)
 
                 GridLayout:
                     rows: 1
                     orientation: "rl-tb"
                     size_hint: 1, None
-                    height: 30
+                    height: dp(30)
                     Button:
                         size_hint: None, 1
-                        width: self.texture_size[0] + 20
+                        width: self.texture_size[0] + dp(20)
                         text: "Save"
                         on_press: root.save_options()
 
