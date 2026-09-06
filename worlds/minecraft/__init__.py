@@ -65,7 +65,7 @@ class MinecraftSettings(settings.Group):
     max_heap_size: str = "2G"
     min_heap_size: str = "1G"
     release_channel: ReleaseChannel = ReleaseChannel("release")
-    java: JavaExecutable = JavaExecutable("")
+    java: JavaExecutable | None = JavaExecutable(None)
 
 
 class MinecraftWebWorld(WebWorld):
