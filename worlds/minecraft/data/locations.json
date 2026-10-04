@@ -200,10 +200,8 @@
             "Crafting a New Look",
             "Smithing with Style",
             "Respecting the Remnants",
-            "Careful Restoration",
             "Crafters Crafting Crafters",
             "Lighten Up",
-            "Stay Hydrated!",
             "Mob Kabob"
         ],
         "The Nether": [
@@ -218,7 +216,8 @@
             "Uneasy Alliance",
             "Is It a Balloon?",
             "Feels Like Home",
-            "The Power of Books"
+            "The Power of Books",
+            "Stay Hydrated!"
         ],
         "The End": [
             "Free the End",
@@ -276,6 +275,7 @@
         ],
         "Trail Ruins": [],
         "Trial Chambers": [
+            "Careful Restoration",
             "Minecraft: Trial(s) Edition",
             "Under Lock and Key",
             "Blowback",
