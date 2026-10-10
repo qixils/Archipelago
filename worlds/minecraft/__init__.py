@@ -153,6 +153,8 @@ class MinecraftWorld(World):
             'starting_items': json.dumps(self.options.starting_items.value),
             'race': self.multiworld.is_race,
             'immediate_respawn': bool(self.options.immediate_respawn.value),
+            "set_seed": bool(self.options.set_seed.value),
+            "world_seed": self.options.world_seed.value,
 
             # Universal Tracker data
             'bosses_to_defeat': self.options.required_bosses.value,

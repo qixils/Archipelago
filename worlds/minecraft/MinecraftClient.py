@@ -422,6 +422,16 @@ class MinecraftClient(MDApp):
             with open(metadata_path, "w") as meta_file:
                 json.dump(metadata, meta_file)
 
+        if self.apmc["set_seed"]:
+            level_seed_str = f"level-seed={self.apmc['world_seed']}"
+            server_properties_path = os.path.join(
+                options.server_directory, "server.properties"
+            )
+            if os.path.isfile(server_properties_path):
+                self.log_warn("existing server.properties found; overwriting it")
+            with open(server_properties_path, "w") as server_properties_file:
+                server_properties_file.writelines([level_seed_str])
+
         os.environ["JAVA_OPTS"] = ""
         neo_run = context['neoforge_run_args']
         neo_dir = context['neoforge_dir']
