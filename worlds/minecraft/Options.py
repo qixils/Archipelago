@@ -152,7 +152,7 @@ class SetSeed(Toggle):
 
 
 class WorldSeed(FreeText):
-    """The numeric world seed to use if Set Seed is on; no effect if Set Seed is off or if left blank."""
+    """The world seed to use if Set Seed is on; no effect if Set Seed is off or if left blank."""
 
     display_name = "World Seed"
 
