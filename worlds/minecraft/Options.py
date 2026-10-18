@@ -13,6 +13,7 @@ from Options import (
     DeathLink,
     PlandoConnections,
     PerGameCommonOptions,
+    Visibility,
 )
 from worlds.AutoWorld import World
 from .Constants import region_info
@@ -132,6 +133,12 @@ class ImmediateRespawn(DefaultOnToggle):
     display_name = "Immediate Respawn"
 
 
+class IncludeMace(DefaultOnToggle):
+    """Internal option that controls whether the player can be expected to use a Mace for Overkill."""
+
+    visibility = Visibility.none
+
+
 class StartingItems(OptionList):
     """Start with these items. Each entry should be of this format: {item: "item_name", amount: #}
     `item` can include components, and should be in an identical format to a `/give` command with
@@ -194,6 +201,7 @@ class MinecraftOptions(PerGameCommonOptions):
     bee_traps: BeeTraps
     send_defeated_mobs: SendDefeatedMobs
     immediate_respawn: ImmediateRespawn
+    include_mace: IncludeMace
     death_link: DeathLink
     starting_items: StartingItems
 
