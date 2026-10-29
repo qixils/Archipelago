@@ -8,7 +8,7 @@ class TestAdvancements(MCTestBase):
     options = {
         "shuffle_structures": False,
         "structure_compasses": False,
-        "include_hard_advancements": False,
+        "include_mace": False,
     }
 
     def test_42000(self):
